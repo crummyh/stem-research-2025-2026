@@ -1,0 +1,12 @@
+[project]
+name = "supervisor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pygame>=2.6.1",
+    "pyqt6==6.4.2",
+    "pyqt6-tools>=6.4.2.3.3",
+    "pyserial>=3.5",
+]
