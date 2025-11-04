@@ -17,11 +17,13 @@ class PacketType(IntEnum):
 
     # Supervisor -> Executor (Commands)
     CMD_SET_MODE = 0x10  # Set operating mode
-    CMD_SET_PARAM = 0x11  # Set a parameter
-    CMD_START = 0x12
-    CMD_STOP = 0x13
-    CMD_RESET = 0x14
+    CMD_SET_PARAM = 0x11  # Set a parameter (Float or int-32)
+    CMD_START = 0x12  # Start Opperation
+    CMD_STOP = 0x13  # Stop Opperation
+    CMD_RESET = 0x14  # Reset Command
     CMD_READ_SENSOR = 0x15  # Request sensor data
+    CMD_SET_TENDONS = 0x16  # Set tendon steering
+    CMD_SET_SPOOL = 0x17  # Set spool position
 
     # Executor -> Supervisor (Data/Status)
     STATUS_UPDATE = 0x20  # Status update
@@ -150,31 +152,31 @@ class PacketBuilder:
     @staticmethod
     def ack(sequence_num: int = 0) -> bytes:
         """Create an ACK packet with optional sequence number"""
-        payload = struct.pack("B", sequence_num)
+        payload = struct.pack("<B", sequence_num)
         return PacketProtocol.create_packet(PacketType.ACK, payload)
 
     @staticmethod
     def nack(error_code: int = 0) -> bytes:
         """Create a NACK packet with error code"""
-        payload = struct.pack("B", error_code)
+        payload = struct.pack("<B", error_code)
         return PacketProtocol.create_packet(PacketType.NACK, payload)
 
     @staticmethod
     def set_mode(mode: int) -> bytes:
         """Set operating mode (0-255)"""
-        payload = struct.pack("B", mode)
+        payload = struct.pack("<B", mode)
         return PacketProtocol.create_packet(PacketType.CMD_SET_MODE, payload)
 
     @staticmethod
     def set_param(param_id: int, value: int) -> bytes:
         """Set a parameter (param_id: 0-255, value: 32-bit int)"""
-        payload = struct.pack("Bi", param_id, value)
+        payload = struct.pack("<Bi", param_id, value)
         return PacketProtocol.create_packet(PacketType.CMD_SET_PARAM, payload)
 
     @staticmethod
     def set_param_float(param_id: int, value: float) -> bytes:
         """Set a parameter with float value"""
-        payload = struct.pack("Bf", param_id, value)
+        payload = struct.pack("<Bf", param_id, value)
         return PacketProtocol.create_packet(PacketType.CMD_SET_PARAM, payload)
 
     @staticmethod
@@ -195,8 +197,20 @@ class PacketBuilder:
     @staticmethod
     def read_sensor(sensor_id: int) -> bytes:
         """Request sensor reading"""
-        payload = struct.pack("B", sensor_id)
+        payload = struct.pack("<B", sensor_id)
         return PacketProtocol.create_packet(PacketType.CMD_READ_SENSOR, payload)
+
+    @staticmethod
+    def set_tendons(tendon_1: int, tendon_2: int, tendon_3: int) -> bytes:
+        """Update tendon setpoints (3 unsigned chars [0-255])"""
+        payload = struct.pack("<BBB", tendon_1, tendon_2, tendon_3)
+        return PacketProtocol.create_packet(PacketType.CMD_SET_TENDONS, payload)
+
+    @staticmethod
+    def set_spool_speed(speed: int) -> bytes:
+        """Update spool speed (32-bit int)"""
+        payload = struct.pack("<i", speed)
+        return PacketProtocol.create_packet(PacketType.CMD_SET_SPOOL, payload)
 
 
 class PacketParser:
@@ -206,7 +220,7 @@ class PacketParser:
     def parse_status_update(payload: bytes) -> dict[str, Any]:
         """Parse status update payload (example: mode, state, uptime)"""
         if len(payload) >= 6:
-            mode, state, uptime = struct.unpack("BBI", payload[:6])
+            mode, state, uptime = struct.unpack("<BBI", payload[:6])
             return {"mode": mode, "state": state, "uptime_ms": uptime}
         return {}
 
@@ -214,7 +228,7 @@ class PacketParser:
     def parse_sensor_data(payload: bytes) -> dict[str, Any]:
         """Parse sensor data (example: sensor_id, value as float)"""
         if len(payload) >= 5:
-            sensor_id, value = struct.unpack("Bf", payload[:5])
+            sensor_id, value = struct.unpack("<Bf", payload[:5])
             return {"sensor_id": sensor_id, "value": value}
         return {}
 
@@ -222,7 +236,7 @@ class PacketParser:
     def parse_error_report(payload: bytes) -> dict[str, Any]:
         """Parse error report (error code and optional data)"""
         if len(payload) >= 1:
-            error_code = struct.unpack("B", payload[:1])[0]
+            error_code = struct.unpack("<B", payload[:1])[0]
             error_data = payload[1:] if len(payload) > 1 else b""
             return {"error_code": error_code, "error_data": error_data}
         return {}

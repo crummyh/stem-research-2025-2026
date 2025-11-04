@@ -29,29 +29,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         _ = self.packet_stream.packet_received.connect(self.on_packet_received)
         _ = self.mcuStatusBtn.clicked.connect(self.mcu_connect_btn)
 
-        # Connect to serial port
-        serial_mgr.connect("COM3", SerialConfig(baud_rate=115200))
-
-        # Send packets
-        packet_stream.send_packet(PacketType.PING)
-        packet_stream.send_packet(PacketType.CMD_SET_MODE, struct.pack("B", 1))
-        packet_stream.send_packet(PacketType.CMD_START)
-
     def mcu_connect_btn(self):
-        pass
+        if self.serial_mgr.is_connected():
+            self.serial_mgr.disconnect()
+            self.mcuStatusInfo.setText("Disconnected")
+            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
+
+        else:
+            success = self.serial_mgr.connect(self.mcuStatusCombo.currentText(), SerialConfig(baud_rate=115200))
+            if not success:
+                self.on_error("Failed to connect to MCU")
+                return
+
+            self.mcuStatusInfo.setText("Connected")
+            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
 
     def on_packet_received(self, packet_type: PacketType, payload: bytes):
         """
         Run every time a packet is revievd from the MCU
         """
-        print(f"Received packet type {packet_type}: {payload.hex()}")
 
-        if packet_type == PacketType.SENSOR_DATA:
-            data = PacketParser.parse_sensor_data(payload)
-            print(f"Sensor {data['sensor_id']}: {data['value']}")
+        # Update the serial text stream
+        self.serialText.insertPlainText(f"[{datetime.now().strftime("%H:%M:%S.%f")}] {packet_type.name} - {payload.hex()}")
 
-        elif packet_type == PacketType.PONG:
-            print("PONG received!")
+    def on_error(self, text: str):
+        pass
 
 
 app = QtWidgets.QApplication(sys.argv)

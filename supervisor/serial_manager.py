@@ -34,7 +34,6 @@ class SerialConfig:
         self.stop_bits = stop_bits
         self.flow_control = flow_control
 
-
 class SerialManager(QObject):
     """
     Manages serial port communication with Arduino-style devices.
