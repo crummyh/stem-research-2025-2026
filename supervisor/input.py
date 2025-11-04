@@ -84,6 +84,9 @@ class ControllerThread(QThread):
         """Stop the polling thread."""
         self.running = False
 
+    def is_running(self):
+        return self.running
+
 
 @final
 class Buttons:
