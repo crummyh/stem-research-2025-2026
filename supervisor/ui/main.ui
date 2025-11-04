@@ -48,7 +48,7 @@
       </widget>
       <widget class="QTabWidget" name="tabs">
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="mainTab">
         <attribute name="title">
@@ -314,20 +314,6 @@ li.checked::marker { content: &quot;\2612&quot;; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="serialSendLayout">
-           <item>
-            <widget class="QLineEdit" name="serialSendLine"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="serialSendBtn">
-             <property name="text">
-              <string>Send</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </item>
         </layout>
        </widget>

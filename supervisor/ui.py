@@ -3,6 +3,7 @@ from enum import Enum
 import sys
 from PyQt6 import QtWidgets
 
+from packet_protocol import PacketParser, PacketStream, PacketType
 from serial_manager import SerialConfig, SerialManager
 from ui.main import Ui_MainWindow
 
@@ -14,75 +15,43 @@ class ControllerStatus(Enum):
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    controller_status: ControllerStatus = ControllerStatus.disconnected
-
     def __init__(self, *args, obj=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Load the generated UI
         self.setupUi(self)
         self.setWindowTitle("Vine Robot Supervisor")
 
-        self.update_controller_status(ControllerStatus.disconnected)
-        self.update_mcu_status(False)
+        # Set up MCU communication
+        self.serial_mgr = SerialManager(auto_decode=False, add_newline=False)
+        self.packet_stream = PacketStream(self.serial_mgr)
 
-        self.serial = SerialManager(auto_decode=True, add_newline=True)
+        # Connect MCU communication signals
+        _ = self.packet_stream.packet_received.connect(self.on_packet_received)
+        _ = self.mcuStatusBtn.clicked.connect(self.mcu_connect_btn)
 
-        _ = self.serial.data_received.connect(self.on_serial_data)
-        _ = self.serial.connection_changed.connect(self.update_mcu_status)
-        # _ = self.serial.error_occurred.connect(self.on_error)
+        # Connect to serial port
+        serial_mgr.connect("COM3", SerialConfig(baud_rate=115200))
 
-        _ = self.mcuSearchBtn.clicked.connect(self.refresh_port_list)
+        # Send packets
+        packet_stream.send_packet(PacketType.PING)
+        packet_stream.send_packet(PacketType.CMD_SET_MODE, struct.pack("B", 1))
+        packet_stream.send_packet(PacketType.CMD_START)
 
-        config = SerialConfig(baud_rate=9600)
-        _ = self.serial.connect("COM3", config)
+    def mcu_connect_btn(self):
+        pass
 
-        self.refresh_port_list()
+    def on_packet_received(self, packet_type: PacketType, payload: bytes):
+        """
+        Run every time a packet is revievd from the MCU
+        """
+        print(f"Received packet type {packet_type}: {payload.hex()}")
 
-    def toggle_mcu_connection(self):
-        if self.serial.is_connected():
-            self.serial.disconnect()
-            self.update_mcu_status(False)
-        else:
-            port = self.mcuStatusCombo.currentText().split(" - ")[0]
-            self.serial.connect(port)
-            self.update_mcu_status(True)
+        if packet_type == PacketType.SENSOR_DATA:
+            data = PacketParser.parse_sensor_data(payload)
+            print(f"Sensor {data['sensor_id']}: {data['value']}")
 
-    def update_controller_status(self, status: ControllerStatus):
-        self.controller_status = status
-        self.controllerStatusLabel.setText(status.value)
-        if status is ControllerStatus.connected:
-            self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
-
-        if status is ControllerStatus.disconnected or status is ControllerStatus.failed:
-            self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
-
-    def update_mcu_status(self, status: bool):
-        if status is True:
-            self.mcuStatusInfo.setText("Connected")
-        else:
-            self.mcuStatusInfo.setText("Disconnected")
-
-        if status is True:
-            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
-
-        if status is False:
-            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
-
-    def refresh_port_list(self):
-        ports = SerialManager.find_arduino_ports()
-
-        for i in range(self.mcuStatusCombo.count()):
-            self.mcuStatusCombo.removeItem(i)
-
-        if len(ports) == 0:
-            self.mcuStatusCombo.addItem("No device found")
-
-        for port in ports:
-            text = f"{port[0]} - {port[1]}"
-            self.mcuStatusCombo.addItem(text)
-
-    def on_serial_data(self, text: str):
-        timestamp = datetime.now()
-        self.serialText.insertPlainText(f"[{timestamp}] {text}\n")
+        elif packet_type == PacketType.PONG:
+            print("PONG received!")
 
 
 app = QtWidgets.QApplication(sys.argv)

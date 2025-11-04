@@ -167,15 +167,6 @@ class Ui_MainWindow(object):
         self.serialText.setFont(font)
         self.serialText.setObjectName("serialText")
         self.verticalLayout_2.addWidget(self.serialText)
-        self.serialSendLayout = QtWidgets.QHBoxLayout()
-        self.serialSendLayout.setObjectName("serialSendLayout")
-        self.serialSendLine = QtWidgets.QLineEdit(parent=self.logTab)
-        self.serialSendLine.setObjectName("serialSendLine")
-        self.serialSendLayout.addWidget(self.serialSendLine)
-        self.serialSendBtn = QtWidgets.QPushButton(parent=self.logTab)
-        self.serialSendBtn.setObjectName("serialSendBtn")
-        self.serialSendLayout.addWidget(self.serialSendBtn)
-        self.verticalLayout_2.addLayout(self.serialSendLayout)
         self.tabs.addTab(self.logTab, "")
         self.horizontalLayout_8.addWidget(self.mainSplitter)
         MainWindow.setCentralWidget(self.centralWidget)
@@ -186,7 +177,7 @@ class Ui_MainWindow(object):
         self.actionSettings.setObjectName("actionSettings")
 
         self.retranslateUi(MainWindow)
-        self.tabs.setCurrentIndex(0)
+        self.tabs.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -216,6 +207,5 @@ class Ui_MainWindow(object):
 "li.checked::marker { content: \"\\2612\"; }\n"
 "</style></head><body style=\" font-family:\'Monospace\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
-        self.serialSendBtn.setText(_translate("MainWindow", "Send"))
         self.tabs.setTabText(self.tabs.indexOf(self.logTab), _translate("MainWindow", "Tab 2"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
