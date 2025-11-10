@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime
-from enum import Enum
 
 from PyQt6 import QtWidgets
 
@@ -9,12 +8,6 @@ from generated_ui.main import Ui_MainWindow
 from input import Axes, Buttons, ControllerThread
 from packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
 from serial_manager import SerialConfig, SerialManager
-
-
-class ControllerStatus(Enum):
-    disconnected = "Disconnected"
-    failed = "Failed"
-    connected = "Connected"
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -35,6 +28,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         _ = self.mcuSearchBtn.clicked.connect(self.mcu_search)
 
         self.mcu_search()
+
+        # Init MCU stats
+        self.mcu_connecting = False
+
+        self.mcu_mode = 0
+        self.mcu_state = 0
 
         # Controller values
         self.left_x = 0.0
@@ -72,8 +71,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.on_error("Failed to connect to MCU")
                 return
 
-            self.mcuStatusInfo.setText("Connected")
-            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+            self.mcuStatusInfo.setText("Connecting")
+            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: yellow; } ")
+
+            self.controller_thread.send_packet(PacketType.PING)
+            self.mcu_connecting = True
 
     def controller_connect_btn(self):
         if self.controller_thread.isRunning():
@@ -125,8 +127,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             f"[{datetime.now().strftime('%H:%M:%S.%f')}] {PacketType(packet_type).name} {payload.hex()}\n"
         )
 
+        # Handle the packet
+        if self.mcu_connecting and packet_type == PacketType.PONG:
+            self.mcu_connecting = False
+            self.controllerStatusInfo.setText("Connected")
+            self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+            return
+        
+        elif packet_type == PacketType.PING:
+            self.packet_stream.send_packet(PacketType.PONG)
+
+        elif packet_type == PacketType.STATUS_UPDATE:
+            status = PacketParser.parse_status_update(payload)
+            self.mcu_mode = status.mode
+            self.mcu_state = status.state
+
+        else:
+            self.packet_stream.send_packet(PacketBuilder.nack(0xff))
+
     def on_error(self, text: str):
-        pass
+        msgBox = QMessageBox()
+        msgBox.setText(text)
+        msgBox.exec()
 
     def on_button_pressed(self, button_id: int):
         pass
