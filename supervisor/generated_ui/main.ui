@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1187</width>
+    <width>1136</width>
     <height>787</height>
    </rect>
   </property>
@@ -141,7 +141,7 @@
            <item>
             <widget class="QLabel" name="controllerStatusLabel">
              <property name="text">
-              <string>Controler Status: </string>
+              <string>Controler: </string>
              </property>
             </widget>
            </item>
@@ -162,17 +162,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QComboBox" name="controllerStatusCombo"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="controllerSearchBtn">
-             <property name="text">
-              <string>Search</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="constollerStatusBtn">
+            <widget class="QPushButton" name="controllerStatusBtn">
              <property name="text">
               <string>Connect</string>
              </property>
@@ -185,7 +175,7 @@
            <item>
             <widget class="QLabel" name="mcuStatusLabel">
              <property name="text">
-              <string>MCU Status:</string>
+              <string>MCU:</string>
              </property>
             </widget>
            </item>
@@ -274,6 +264,13 @@
           </layout>
          </item>
          <item>
+          <widget class="QLabel" name="tempControllerText">
+           <property name="text">
+            <string>TextLabel</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="verticalSpacer">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -285,6 +282,13 @@
             </size>
            </property>
           </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="testBtn">
+           <property name="text">
+            <string>Test Button</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -302,6 +306,12 @@
             <font>
              <family>Monospace</family>
             </font>
+           </property>
+           <property name="mouseTracking">
+            <bool>false</bool>
+           </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
            </property>
            <property name="html">
             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;

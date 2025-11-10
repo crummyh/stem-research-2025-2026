@@ -1,13 +1,15 @@
+import sys
 from datetime import datetime
 from enum import Enum
-import sys
+
 from PyQt6 import QtWidgets
 
-from packet_protocol import PacketParser, PacketStream, PacketType
-from serial_manager import SerialConfig, SerialManager
-from ui.main import Ui_MainWindow
-from input import Axes, Buttons, ControllerThread
 import config
+from generated_ui.main import Ui_MainWindow
+from input import Axes, Buttons, ControllerThread
+from packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
+from serial_manager import SerialConfig, SerialManager
+
 
 class ControllerStatus(Enum):
     disconnected = "Disconnected"
@@ -28,7 +30,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Connect MCU communication signals
         _ = self.packet_stream.packet_received.connect(self.on_packet_received)
+        _ = self.packet_stream.packet_sent.connect(self.on_packet_sent)
         _ = self.mcuStatusBtn.clicked.connect(self.mcu_connect_btn)
+        _ = self.mcuSearchBtn.clicked.connect(self.mcu_search)
+
+        self.mcu_search()
 
         # Controller values
         self.left_x = 0.0
@@ -40,11 +46,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Set up controller communication
         self.controller_thread = ControllerThread(poll_rate=config.CONTROLLER_POLL_RATE)
-        self.controller_thread.button_pressed.connect(self.on_button_pressed)
-        self.controller_thread.button_released.connect(self.on_button_released)
-        self.controller_thread.axis_motion.connect(self.on_axis_motion)
+        _ = self.controller_thread.button_pressed.connect(self.on_button_pressed)
+        _ = self.controller_thread.button_released.connect(self.on_button_released)
+        _ = self.controller_thread.axis_motion.connect(self.on_axis_motion)
 
-        _ = self.constollerStatusBtn.clicked.connect(self.controller_connect_btn)
+        _ = self.controllerStatusBtn.clicked.connect(self.controller_connect_btn)
+
+        _ = self.testBtn.clicked.connect(self.test_ping)
+
+    def test_ping(self):
+        self.packet_stream.send_packet(PacketType.PING)
 
     def mcu_connect_btn(self):
         if self.serial_mgr.is_connected():
@@ -53,7 +64,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
 
         else:
-            success = self.serial_mgr.connect(self.mcuStatusCombo.currentText(), SerialConfig(baud_rate=config.MCU_BAUD_RATE))
+            success = self.serial_mgr.connect(
+                self.mcuStatusCombo.currentText(),
+                SerialConfig(baud_rate=config.MCU_BAUD_RATE),
+            )
             if not success:
                 self.on_error("Failed to connect to MCU")
                 return
@@ -61,20 +75,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.mcuStatusInfo.setText("Connected")
             self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
 
-    def controller_connect_btn(self)
-        if self.controller_thread.is_running():
-            pass
+    def controller_connect_btn(self):
+        if self.controller_thread.isRunning():
+            self.controller_thread.stop()
+            self.controllerStatusBtn.setText("Connect")
+            self.controllerStatusInfo.setText("Disconnected")
+            self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
 
         else:
             self.controller_thread.start()
 
-    def on_packet_received(self, packet_type: PacketType, payload: bytes):
-        """
-        Run every time a packet is revievd from the MCU
-        """
+            if self.controller_thread.isRunning():
+                self.controllerStatusBtn.setText("Disconnect")
+                self.controllerStatusInfo.setText("Connected")
+                self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+
+            else:
+                self.controller_thread.stop()
+                self.on_error("Failed to connect to controller")
+
+    def mcu_search(self):
+        ports = SerialManager.find_arduino_ports()
+        for i in range(self.mcuStatusCombo.count()):
+            self.mcuStatusCombo.removeItem(i)
+
+        self.mcuStatusCombo.insertItems(0, ports)
+
+    def on_packet_sent(self, packet_type: PacketType, payload: bytes):
+        cursor = self.serialText.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self.serialText.setTextCursor(cursor)
 
         # Update the serial text stream
-        self.serialText.insertPlainText(f"[{datetime.now().strftime("%H:%M:%S.%f")}] {packet_type.name} - {payload.hex()}")
+        self.serialText.insertPlainText(
+            f"[{datetime.now().strftime('%H:%M:%S.%f')}] {PacketType(packet_type).name} {payload.hex()}\n"
+        )
+
+    def on_packet_received(self, packet_type: PacketType, payload: bytes):
+        """
+        Run every time a packet is retrieved from the MCU
+        """
+
+        cursor = self.serialText.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self.serialText.setTextCursor(cursor)
+
+        # Update the serial text stream
+        self.serialText.insertPlainText(
+            f"[{datetime.now().strftime('%H:%M:%S.%f')}] {PacketType(packet_type).name} {payload.hex()}\n"
+        )
 
     def on_error(self, text: str):
         pass
@@ -86,25 +135,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         pass
 
     def on_axis_motion(self, axis_id: int, value: float):
-        if abs(value) > config.TRIGGER_DEADZONE
+        if abs(value) > (-1 + config.TRIGGER_DEADZONE):
             if axis_id == Axes.LEFT_TRIGGER:
+                value = (0.5 * value) + 0.5
                 self.left_trigger = value
 
             elif axis_id == Axes.RIGHT_TRIGGER:
+                value = (0.5 * value) + 0.5
                 self.right_trigger = value
+
+        else:
+            if axis_id == Axes.LEFT_TRIGGER:
+                self.left_trigger = 0
+
+            elif axis_id == Axes.RIGHT_TRIGGER:
+                self.right_trigger = 0
 
         if abs(value) > config.JOYSTICK_DEADZONE:
             if axis_id == Axes.LEFT_X:
                 self.left_x = value
 
             elif axis_id == Axes.LEFT_Y:
-                self.left_y = value
+                self.left_y = value * -1  # Invert the y direction
 
             elif axis_id == Axes.RIGHT_X:
                 self.right_x = value
 
             elif axis_id == Axes.RIGHT_Y:
-                self.right_y = value
+                self.right_y = value * -1  # Invert the y direction
+
+        else:
+            if axis_id == Axes.LEFT_X:
+                self.left_x = 0
+
+            elif axis_id == Axes.LEFT_Y:
+                self.left_y = 0
+
+            elif axis_id == Axes.RIGHT_X:
+                self.right_x = 0
+
+            elif axis_id == Axes.RIGHT_Y:
+                self.right_y = 0
+
+        self.tempControllerText.setText(f"""
+            LT: {self.left_trigger}
+            RT: {self.right_trigger}
+            L: {self.left_x}, {self.left_y}
+            R: {self.right_x}, {self.right_y}
+            """)
 
     def closeEvent(self, a0):
         """Clean up when window closes."""

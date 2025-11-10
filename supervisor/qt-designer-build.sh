@@ -1,1 +1,1 @@
-uv run pyuic6 ui/main.ui -o ui/main.py
+uv run pyuic6 generated_ui/main.ui -o generated_ui/main.py

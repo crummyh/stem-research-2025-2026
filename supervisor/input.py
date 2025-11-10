@@ -1,9 +1,10 @@
+import sys
 from time import sleep
 from typing import Callable, final
+
 import pygame
-import sys
-from PyQt6.QtCore import QObject, QThread, pyqtSignal, QTimer
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
+from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 
 
 class ControllerThread(QThread):
@@ -34,9 +35,7 @@ class ControllerThread(QThread):
         pygame.init()
         pygame.joystick.init()
 
-        i = 0
         while pygame.joystick.get_count() == 0:
-            print(f"No game controller detected.")
             return
 
         self.joystick = pygame.joystick.Joystick(self.joystick_id)
@@ -84,9 +83,6 @@ class ControllerThread(QThread):
         """Stop the polling thread."""
         self.running = False
 
-    def is_running(self):
-        return self.running
-
 
 @final
 class Buttons:
@@ -109,8 +105,8 @@ class Axes:
     """Axis ID constants"""
 
     LEFT_X = 0
-    LEFT_Y = 1  # BAD
+    LEFT_Y = 1
     RIGHT_X = 3
     RIGHT_Y = 4
     LEFT_TRIGGER = 2
-    RIGHT_TRIGGER = 5  # BAD
+    RIGHT_TRIGGER = 5

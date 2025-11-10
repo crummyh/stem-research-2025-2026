@@ -1,6 +1,7 @@
-from PyQt6.QtSerialPort import QSerialPort, QSerialPortInfo
-from PyQt6.QtCore import QObject, QIODevice, pyqtSignal, pyqtSlot
 from enum import Enum
+
+from PyQt6.QtCore import QIODevice, QObject, pyqtSignal, pyqtSlot
+from PyQt6.QtSerialPort import QSerialPort, QSerialPortInfo
 
 
 class SerialError(Enum):
@@ -33,6 +34,7 @@ class SerialConfig:
         self.parity = parity
         self.stop_bits = stop_bits
         self.flow_control = flow_control
+
 
 class SerialManager(QObject):
     """
@@ -80,7 +82,7 @@ class SerialManager(QObject):
         return ports
 
     @staticmethod
-    def find_arduino_ports() -> list[tuple[str, str]]:
+    def find_arduino_ports() -> list[str]:
         """
         Find ports that are likely Arduino devices.
 
@@ -98,7 +100,7 @@ class SerialManager(QObject):
                 keyword.lower() in desc.lower() or keyword.lower() in mfg.lower()
                 for keyword in arduino_keywords
             ):
-                arduino_ports.append((port.portName(), desc))
+                arduino_ports.append(port.portName())
 
         return arduino_ports
 

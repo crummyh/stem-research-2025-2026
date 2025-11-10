@@ -1,6 +1,7 @@
 import struct
 from enum import IntEnum
 from typing import Any
+
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from serial_manager import SerialManager
@@ -18,8 +19,8 @@ class PacketType(IntEnum):
     # Supervisor -> Executor (Commands)
     CMD_SET_MODE = 0x10  # Set operating mode
     CMD_SET_PARAM = 0x11  # Set a parameter (Float or int-32)
-    CMD_START = 0x12  # Start Opperation
-    CMD_STOP = 0x13  # Stop Opperation
+    CMD_START = 0x12  # Start Operation
+    CMD_STOP = 0x13  # Stop Operation
     CMD_RESET = 0x14  # Reset Command
     CMD_READ_SENSOR = 0x15  # Request sensor data
     CMD_SET_TENDONS = 0x16  # Set tendon steering
@@ -257,7 +258,7 @@ class PacketStream(QObject):
 
     # Signals
     packet_received: pyqtSignal = pyqtSignal(int, bytes)  # (packet_type, payload)
-    packet_sent: pyqtSignal = pyqtSignal(int)  # (packet_type)
+    packet_sent: pyqtSignal = pyqtSignal(int, bytes)  # (packet_type, payload)
     error_occurred: pyqtSignal = pyqtSignal(str)  # (error_message)
 
     def __init__(self, serial_manager: SerialManager):
@@ -326,7 +327,7 @@ class PacketStream(QObject):
             success = self.serial_mgr.send_bytes(packet)
             if success:
                 self.packets_sent += 1
-                self.packet_sent.emit(packet_type)
+                self.packet_sent.emit(packet_type, payload)
             return success
         except Exception as e:
             self.error_occurred.emit(f"Failed to send packet: {str(e)}")
