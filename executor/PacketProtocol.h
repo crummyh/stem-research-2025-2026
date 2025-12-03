@@ -9,7 +9,9 @@ enum PacketType: uint8_t {
     PING = 0x01,  // Ping (Do you hear me?)
     PONG = 0x02,  // Pong (I hear you!)
     ACK = 0x03,  // Acknowledge (Understood)
-    NACK = 0x03,  // Negative Acknowledge (I don't understand)
+    NACK = 0x04,  // Negative Acknowledge (I don't understand)
+
+    // Space left here
 
     // Supervisor -> Executor (Commands)
     CMD_SET_MODE = 0x10,  // Set operating mode
@@ -20,6 +22,8 @@ enum PacketType: uint8_t {
     CMD_READ_SENSOR = 0x15,  // Request sensor data
     CMD_SET_TENDONS = 0x16,  // Set tendon steering
     CMD_SET_SPOOL = 0x17,  // Set spool position
+
+    // Space left here
 
     // Executor -> Supervisor (Data/Status)
     STATUS_UPDATE = 0x20,  // Status update
