@@ -1,6 +1,7 @@
 #ifndef PACKET_PROTOCOL_H
 #define PACKET_PROTOCOL_H
 
+#include <inttypes.h>
 #include <Arduino.h>
 
 // Packet type definitions

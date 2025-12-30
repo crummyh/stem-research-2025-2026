@@ -180,7 +180,7 @@ class SerialManager(QObject):
 
         return True
 
-    def send_bytes(self, data: bytes) -> bool:
+    def send_bytes(self, data: bytes, throw_error: bool = True) -> bool:
         """
         Send raw bytes to the serial port.
 
@@ -191,13 +191,15 @@ class SerialManager(QObject):
             True if successful, False otherwise
         """
         if not self.is_connected():
-            self.error_occurred.emit("Not connected to any port")
+            if throw_error:
+                self.error_occurred.emit("Not connected to any port")
             return False
 
         bytes_written = self.serial.write(data)
 
         if bytes_written == -1:
-            self.error_occurred.emit("Failed to write data")
+            if throw_error:
+                self.error_occurred.emit("Failed to write data")
             return False
 
         return True

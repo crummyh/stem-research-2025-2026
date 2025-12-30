@@ -1,13 +1,17 @@
-from math import pi
+from numpy import pi
 
-CONTROLLER_POLL_RATE = 0.01
+CONTROLLER_POLL_RATE = 0.05
 MCU_BAUD_RATE = 115200
 JOYSTICK_DEADZONE = 0.05
 TRIGGER_DEADZONE = 0.1
 
-TENDON_1_ANGLE = 0
-TENDON_2_ANGLE = 2 * pi / 3
-TENDON_3_ANGLE = 4 * pi / 3
+TENDON_1_ANGLE = 0.5 * pi
+TENDON_2_ANGLE = -5 * pi / 6
+TENDON_3_ANGLE = -1 * pi / 6
+V_TENDON_1_ANGLE = 0
+V_TENDON_2_ANGLE = 2 * pi / 3
+V_TENDON_3_ANGLE = 4 * pi / 3
+
 
 BODY_DIAMETER = 0.0254  # Meters (3 inches)
 TENDON_SPOOL_DIAMETER = 0.0254  # Meters (1 inch)

@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#include <inttypes.h>
 #include "PacketProtocol.h"
 
 PacketProtocol::PacketProtocol()
@@ -40,20 +42,14 @@ bool PacketProtocol::validatePacket(const uint8_t* packet, uint8_t length) {
 void PacketProtocol::update() {
     if (!serial) return;
 
-    while (serial->available()) {
-        uint8_t byte = serial->read();
+    // Read available data into buffer
+    while (serial->available() && rxBufferIndex < sizeof(rxBuffer)) {
+        rxBuffer[rxBufferIndex++] = serial->read();
+    }
 
-        // Check for buffer overflow
-        if (rxBufferIndex >= sizeof(rxBuffer)) {
-            rxBufferIndex = 0;  // Reset on overflow
-        }
-
-        rxBuffer[rxBufferIndex++] = byte;
-
-        // Try to process buffer when we have enough data
-        if (rxBufferIndex >= MIN_PACKET_SIZE) {
-            processBuffer();
-        }
+    // Process one complete packet if available
+    if (rxBufferIndex >= MIN_PACKET_SIZE) {
+        processBuffer();
     }
 }
 
@@ -78,19 +74,24 @@ void PacketProtocol::processBuffer() {
     uint8_t payloadLength = rxBuffer[2];
     uint8_t packetLength = MIN_PACKET_SIZE + payloadLength;
 
-    if (rxBufferIndex < packetLength) return;  // Wait for more data
+    if (rxBufferIndex < packetLength) return;
 
-    // Validate and handle packet
-    if (validatePacket(rxBuffer, packetLength)) {
-        handlePacket(rxBuffer, packetLength);
+    // Validate packet
+    bool isValid = validatePacket(rxBuffer, packetLength);
+
+    // Remove packet from buffer
+    uint8_t tempPacket[MIN_PACKET_SIZE + MAX_PAYLOAD_SIZE];
+    memcpy(tempPacket, rxBuffer, packetLength);
+    memmove(rxBuffer, rxBuffer + packetLength, rxBufferIndex - packetLength);
+    rxBufferIndex -= packetLength;
+
+    // Now handle the packet (safe to send responses)
+    if (isValid) {
+        handlePacket(tempPacket, packetLength);
         packetsReceived++;
     } else {
         packetsInvalid++;
     }
-
-    // Remove processed packet from buffer
-    memmove(rxBuffer, rxBuffer + packetLength, rxBufferIndex - packetLength);
-    rxBufferIndex -= packetLength;
 }
 
 void PacketProtocol::handlePacket(const uint8_t* packet, uint8_t length) {

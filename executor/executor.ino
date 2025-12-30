@@ -1,23 +1,40 @@
 #include "PacketProtocol.h"
+#include "PositionStepper.h"
+
+#define tempMotorPul 5
+#define tempMotorDir 6
+#define tempMotorEna 7
+
+// const float PI = 3.14159;
+const int STEPS_PER_REV = 400;
+
+PositionStepper testSteeper(tempMotorPul, tempMotorDir, tempMotorEna, STEPS_PER_REV, false);
 
 PacketProtocol protocol;
 
 uint8_t mode;
 
+
+float radsToRevs(float rads) {
+    return rads * 2 * PI;
+}
+
 // Packet handler callback
 void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
     switch (type) {
         case PING:
-            protocol.sendPong();
+            if (!protocol.sendPong()) {
+                digitalWrite(LED_BUILTIN, HIGH);
+            }
             break;
 
         case CMD_START:
-            // Start your motors/process
+            testSteeper.start();
             protocol.sendAck();
             break;
 
         case CMD_STOP:
-            // Stop motors
+            testSteeper.stop();
             protocol.sendAck();
             break;
 
@@ -66,14 +83,18 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
             uint8_t sensorId;
             if (PacketParser::parseReadSensor(payload, length, sensorId)) {
                 // Read sensor and send data
-                float value = readSensor(sensorId);
-                protocol.sendSensorData(sensorId, value);
+                // float value = readSensor(sensorId);
+                // protocol.sendSensorData(sensorId, value);
             }
             break;
         }
 
+        case NACK: {
+            break;
+        }
+
         default:
-            protocol.sendNack(0xFF);  // Unknown command
+            protocol.sendNack(type);  // Unknown command
             break;
     }
 }
@@ -81,6 +102,9 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
 void setup() {
     Serial.begin(115200);
     protocol.begin(&Serial, onPacketReceived);
+
+    testSteeper.start(); // VERY BAD
+    testSteeper.startMoveToPosition(400);
 }
 
 void loop() {
@@ -94,10 +118,5 @@ void loop() {
         lastStatus = millis();
     }
 
-    // Your loop code here
-}
-
-float readSensor(uint8_t id) {
-    // Placeholder - read actual sensor
-    return analogRead(A0) * 0.1;
+    testSteeper.updatePosition();
 }

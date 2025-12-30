@@ -96,8 +96,9 @@ class Buttons:
     RB = 5
     BACK = 6
     START = 7
-    L_STICK = 8
-    R_STICK = 9
+    LOGO = 8
+    L_STICK = 9
+    R_STICK = 10
 
 
 @final

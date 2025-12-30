@@ -1,13 +1,18 @@
 import sys
 from datetime import datetime
+from random import randint
 
 from PyQt6 import QtWidgets
+from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QKeySequence, QShortcut
 
 import config
+from control import cartesian_to_polar, controller_to_tendon
 from generated_ui.main import Ui_MainWindow
 from input import Axes, Buttons, ControllerThread
 from packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
 from serial_manager import SerialConfig, SerialManager
+from steering_widget import RobotSteeringWidget
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -19,21 +24,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Set up MCU communication
         self.serial_mgr = SerialManager(auto_decode=False, add_newline=False)
+        self.serial_mgr.error_occurred.connect(self.on_error)
         self.packet_stream = PacketStream(self.serial_mgr)
 
         # Connect MCU communication signals
-        _ = self.packet_stream.packet_received.connect(self.on_packet_received)
-        _ = self.packet_stream.packet_sent.connect(self.on_packet_sent)
-        _ = self.mcuStatusBtn.clicked.connect(self.mcu_connect_btn)
-        _ = self.mcuSearchBtn.clicked.connect(self.mcu_search)
+        self.packet_stream.packet_received.connect(self.on_packet_received)
+        self.packet_stream.packet_sent.connect(self.on_packet_sent)
+        self.packet_stream.error_occurred.connect(self.on_error)
+        self.mcuStatusBtn.clicked.connect(self.mcu_connect_btn)
+        self.mcuSearchBtn.clicked.connect(self.mcu_search)
 
         self.mcu_search()
 
         # Init MCU stats
         self.mcu_connecting = False
+        self.mcu_connected = False
+
+        self.mcu_connect_timer = QTimer(self)
+        self.mcu_connect_timer.timeout.connect(self.mcu_connection_attempt)
+        self.mcu_connection_attempts = 10
 
         self.mcu_mode = 0
         self.mcu_state = 0
+        self.mcu_active = False
+
+        self.activationButton.clicked.connect(self.toggle_activation_btn)
+        self.activation_shortcut = QShortcut(QKeySequence(" "), self)
+        self.activation_shortcut.setAutoRepeat(False)
+        self.activation_shortcut.activated.connect(self.toggle_activation_btn)
+        self.activationButton.setStyleSheet(
+            " QPushButton { background-color: red; color: white; } "
+        )
+
+        self.tendon1Progress.setMaximum(int(config.MAX_CURVE * 100))
+        self.tendon1Progress.setMinimum(int(config.MAX_CURVE * -100))
+        self.tendon2Progress.setMaximum(int(config.MAX_CURVE * 100))
+        self.tendon2Progress.setMinimum(int(config.MAX_CURVE * -100))
+        self.tendon3Progress.setMaximum(int(config.MAX_CURVE * 100))
+        self.tendon3Progress.setMinimum(int(config.MAX_CURVE * -100))
 
         # Controller values
         self.left_x = 0.0
@@ -45,22 +73,57 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Set up controller communication
         self.controller_thread = ControllerThread(poll_rate=config.CONTROLLER_POLL_RATE)
-        _ = self.controller_thread.button_pressed.connect(self.on_button_pressed)
-        _ = self.controller_thread.button_released.connect(self.on_button_released)
-        _ = self.controller_thread.axis_motion.connect(self.on_axis_motion)
+        self.controller_thread.button_pressed.connect(self.on_button_pressed)
+        self.controller_thread.button_released.connect(self.on_button_released)
+        self.controller_thread.axis_motion.connect(self.on_axis_motion)
 
-        _ = self.controllerStatusBtn.clicked.connect(self.controller_connect_btn)
+        self.controllerStatusBtn.clicked.connect(self.controller_connect_btn)
 
-        _ = self.testBtn.clicked.connect(self.test_ping)
+        # Set up custom widgets
+        self.steering_widget = RobotSteeringWidget()
+        self.rightLayout.addChildWidget(self.steering_widget)
+        self.steering_widget.setMaximumSize(500, 500)
+
+        self.testBtn.clicked.connect(self.test_ping)
+
+        # Set up status bar
+        self.statusbar_activation = QtWidgets.QLabel()
+        self.statusbar_mcu_connection = QtWidgets.QLabel()
+        self.statusbar_controller_connection = QtWidgets.QLabel()
+
+        self.statusbar.addPermanentWidget(self.statusbar_activation)
+        self.statusbar.addPermanentWidget(self.statusbar_mcu_connection)
+        self.statusbar.addPermanentWidget(self.statusbar_controller_connection)
+
+        self.statusbar_activation.setText("Disabled")
+        self.statusbar_activation.setStyleSheet(
+            " QLabel { color: red; font-weight: bold; font-style: italic; } "
+        )
+        self.statusbar_mcu_connection.setText("MCU: Disconnected")
+        self.statusbar_mcu_connection.setStyleSheet(" QLabel { color: red; } ")
+        self.statusbar_controller_connection.setText("Controller: Disconnected")
+        self.statusbar_controller_connection.setStyleSheet(" QLabel { color: red; } ")
 
     def test_ping(self):
-        self.packet_stream.send_packet(PacketType.PING)
+        self.packet_stream.send_packet(
+            PacketType.CMD_SET_MODE, PacketBuilder.set_mode(randint(0, 255))
+        )
 
     def mcu_connect_btn(self):
         if self.serial_mgr.is_connected():
+            self.mcu_active = False
+            self.packet_stream.send_packet(PacketType.CMD_STOP)
+            self.activationButton.setStyleSheet(
+                " QPushButton { background-color: red; } "
+            )
+            self.activationButton.setText("Disabled")
+
             self.serial_mgr.disconnect()
             self.mcuStatusInfo.setText("Disconnected")
             self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
+            self.statusbar_mcu_connection.setText("MCU: Disconnected")
+            self.statusbar_mcu_connection.setStyleSheet(" QLabel { color: red; } ")
+            self.mcu_connected = False
 
         else:
             success = self.serial_mgr.connect(
@@ -74,8 +137,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.mcuStatusInfo.setText("Connecting")
             self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: yellow; } ")
 
-            self.controller_thread.send_packet(PacketType.PING)
+            self.statusbar_mcu_connection.setText("MCU: Connecting")
+            self.statusbar_mcu_connection.setStyleSheet(" QLabel { color: yellow; } ")
+
+            self.mcu_connection_attempt()
             self.mcu_connecting = True
+            self.mcu_connection_attempts = 10
+            self.mcu_connect_timer.start(1000)
+
+    def mcu_connection_attempt(self):
+        if self.mcu_connection_attempts <= 0:
+            self.mcu_connect_timer.stop()
+            self.on_error("Failed to connect to MCU")
+            return
+
+        self.packet_stream.send_packet(PacketType.PING, PacketBuilder.ping(), False)
+        self.mcu_connection_attempts -= 1
 
     def controller_connect_btn(self):
         if self.controller_thread.isRunning():
@@ -84,6 +161,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.controllerStatusInfo.setText("Disconnected")
             self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: red; } ")
 
+            self.statusbar_controller_connection.setText("Controller: Disconnected")
+            self.statusbar_controller_connection.setStyleSheet(
+                " QLabel { color: red; } "
+            )
+
         else:
             self.controller_thread.start()
 
@@ -91,6 +173,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.controllerStatusBtn.setText("Disconnect")
                 self.controllerStatusInfo.setText("Connected")
                 self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+
+                self.statusbar_controller_connection.setText("Controller: Connected")
+                self.statusbar_controller_connection.setStyleSheet(
+                    " QLabel { color: green; } "
+                )
 
             else:
                 self.controller_thread.stop()
@@ -103,6 +190,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.mcuStatusCombo.insertItems(0, ports)
 
+    def toggle_activation_btn(self):
+        if self.mcu_connected:
+            if self.mcu_active:
+                self.mcu_active = False
+                self.packet_stream.send_packet(PacketType.CMD_STOP)
+                self.activationButton.setStyleSheet(
+                    " QPushButton { background-color: red; } "
+                )
+                self.activationButton.setText("Disabled")
+
+                self.statusbar_activation.setText("Disabled")
+                self.statusbar_activation.setStyleSheet(
+                    " QLabel { color: red; font-weight: bold; font-style: italic; } "
+                )
+
+            else:
+                self.mcu_active = True
+                self.packet_stream.send_packet(PacketType.CMD_START)
+                self.activationButton.setStyleSheet(
+                    " QPushButton { background-color: green; } "
+                )
+                self.activationButton.setText("Enabled")
+
+                self.statusbar_activation.setText("Enabled")
+                self.statusbar_activation.setStyleSheet(
+                    " QLabel { color: green; font-weight: bold; font-style: italic; } "
+                )
+
+        else:
+            self.on_error("Failed to change activation state: MCU is not connected")
+
     def on_packet_sent(self, packet_type: PacketType, payload: bytes):
         cursor = self.serialText.textCursor()
         cursor.movePosition(cursor.MoveOperation.End)
@@ -110,7 +228,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Update the serial text stream
         self.serialText.insertPlainText(
-            f"[{datetime.now().strftime('%H:%M:%S.%f')}] {PacketType(packet_type).name} {payload.hex()}\n"
+            f"[{datetime.now().strftime('%H:%M:%S.%f')}] -> {PacketType(packet_type).name} {payload.hex(' ')}\n"
         )
 
     def on_packet_received(self, packet_type: PacketType, payload: bytes):
@@ -124,34 +242,48 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Update the serial text stream
         self.serialText.insertPlainText(
-            f"[{datetime.now().strftime('%H:%M:%S.%f')}] {PacketType(packet_type).name} {payload.hex()}\n"
+            f"[{datetime.now().strftime('%H:%M:%S.%f')}] <- {PacketType(packet_type).name} {payload.hex(' ')}\n"
         )
 
         # Handle the packet
         if self.mcu_connecting and packet_type == PacketType.PONG:
             self.mcu_connecting = False
-            self.controllerStatusInfo.setText("Connected")
-            self.controllerStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+            self.mcu_connected = True
+            self.mcuStatusInfo.setText("Connected")
+            self.mcuStatusInfo.setStyleSheet(" QLineEdit { color: green; } ")
+            self.mcu_connect_timer.stop()
+
+            self.statusbar_mcu_connection.setText("MCU: Connected")
+            self.statusbar_mcu_connection.setStyleSheet(" QLabel { color: green; } ")
+
             return
-        
+
+        elif packet_type == PacketType.PONG:
+            return
+
+        elif packet_type == PacketType.ACK:
+            return
+
         elif packet_type == PacketType.PING:
             self.packet_stream.send_packet(PacketType.PONG)
 
         elif packet_type == PacketType.STATUS_UPDATE:
             status = PacketParser.parse_status_update(payload)
-            self.mcu_mode = status.mode
-            self.mcu_state = status.state
+            if status is not None:
+                self.mcu_mode = status.mode
+                self.mcu_state = status.state
 
         else:
-            self.packet_stream.send_packet(PacketBuilder.nack(0xff))
+            self.packet_stream.send_packet(PacketType.NACK, PacketBuilder.nack(0xFF))
 
     def on_error(self, text: str):
-        msgBox = QMessageBox()
+        msgBox = QtWidgets.QMessageBox()
         msgBox.setText(text)
         msgBox.exec()
 
     def on_button_pressed(self, button_id: int):
-        pass
+        if button_id == Buttons.LOGO:
+            self.toggle_activation_btn()
 
     def on_button_released(self, button_id: int):
         pass
@@ -199,12 +331,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif axis_id == Axes.RIGHT_Y:
                 self.right_y = 0
 
-        self.tempControllerText.setText(f"""
-            LT: {self.left_trigger}
-            RT: {self.right_trigger}
-            L: {self.left_x}, {self.left_y}
-            R: {self.right_x}, {self.right_y}
-            """)
+        self.tempControllerText.setText(
+            f"n\n\n\n\n\n\n\nX:{self.left_x} Y:{self.left_y}"
+        )
+
+        if (
+            self.mcu_connected
+            and self.mcu_active
+            and (axis_id == Axes.LEFT_X or axis_id == Axes.LEFT_Y)
+        ):
+            tendon_values = tuple(
+                float(i)
+                for i in controller_to_tendon(
+                    round(self.left_x, 5), round(self.left_y, 5)
+                )
+            )
+            self.packet_stream.send_packet(
+                PacketType.CMD_SET_TENDONS,
+                PacketBuilder.set_tendons(*tendon_values),
+            )
+            self.steering_widget.setTendonValues(*tendon_values)
+            self.steering_widget.setSteering(
+                *cartesian_to_polar(self.left_x, self.left_y)
+            )
+
+            self.tendon1Progress.setValue(int(tendon_values[0] * 100))
+            self.tendon2Progress.setValue(int(tendon_values[1] * 100))
+            self.tendon3Progress.setValue(int(tendon_values[2] * 100))
 
     def closeEvent(self, a0):
         """Clean up when window closes."""

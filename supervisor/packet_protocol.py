@@ -1,4 +1,6 @@
+import string
 import struct
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any
 
@@ -35,6 +37,14 @@ class PacketType(IntEnum):
     SENSOR_DATA = 0x21  # Sensor data response
     ERROR_REPORT = 0x22  # Error report
     DEBUG_MESSAGE = 0x23  # Debug message
+
+
+class PacketModels:
+    @dataclass
+    class StatusUpdate:
+        mode: int
+        state: int
+        uptime: int
 
 
 class PacketProtocol:
@@ -147,87 +157,79 @@ class PacketBuilder:
     @staticmethod
     def ping() -> bytes:
         """Create a PING packet"""
-        return PacketProtocol.create_packet(PacketType.PING)
+        return b""
 
     @staticmethod
     def pong() -> bytes:
         """Create a PONG packet"""
-        return PacketProtocol.create_packet(PacketType.PONG)
+        return b""
 
     @staticmethod
     def ack(sequence_num: int = 0) -> bytes:
         """Create an ACK packet with optional sequence number"""
-        payload = struct.pack("<B", sequence_num)
-        return PacketProtocol.create_packet(PacketType.ACK, payload)
+        return struct.pack("<B", sequence_num)
 
     @staticmethod
     def nack(error_code: int = 0) -> bytes:
         """Create a NACK packet with error code"""
-        payload = struct.pack("<B", error_code)
-        return PacketProtocol.create_packet(PacketType.NACK, payload)
+        return struct.pack("<B", error_code)
 
     @staticmethod
     def set_mode(mode: int) -> bytes:
         """Set operating mode (0-255)"""
-        payload = struct.pack("<B", mode)
-        return PacketProtocol.create_packet(PacketType.CMD_SET_MODE, payload)
+        return struct.pack("<B", mode)
 
     @staticmethod
     def set_param(param_id: int, value: int) -> bytes:
         """Set a parameter (param_id: 0-255, value: 32-bit int)"""
-        payload = struct.pack("<Bi", param_id, value)
-        return PacketProtocol.create_packet(PacketType.CMD_SET_PARAM, payload)
+        return struct.pack("<Bi", param_id, value)
 
     @staticmethod
     def set_param_float(param_id: int, value: float) -> bytes:
         """Set a parameter with float value"""
-        payload = struct.pack("<Bf", param_id, value)
-        return PacketProtocol.create_packet(PacketType.CMD_SET_PARAM, payload)
+        return struct.pack("<Bf", param_id, value)
 
     @staticmethod
     def start() -> bytes:
         """Create START command"""
-        return PacketProtocol.create_packet(PacketType.CMD_START)
+        return b""
 
     @staticmethod
     def stop() -> bytes:
         """Create STOP command"""
-        return PacketProtocol.create_packet(PacketType.CMD_STOP)
+        return b""
 
     @staticmethod
     def reset() -> bytes:
         """Create RESET command"""
-        return PacketProtocol.create_packet(PacketType.CMD_RESET)
+        return b""
 
     @staticmethod
     def read_sensor(sensor_id: int) -> bytes:
         """Request sensor reading"""
-        payload = struct.pack("<B", sensor_id)
-        return PacketProtocol.create_packet(PacketType.CMD_READ_SENSOR, payload)
+        return struct.pack("<B", sensor_id)
 
     @staticmethod
-    def set_tendons(tendon_1: int, tendon_2: int, tendon_3: int) -> bytes:
-        """Update tendon setpoints (3 unsigned chars [0-255])"""
-        payload = struct.pack("<BBB", tendon_1, tendon_2, tendon_3)
-        return PacketProtocol.create_packet(PacketType.CMD_SET_TENDONS, payload)
+    def set_tendons(tendon_1: float, tendon_2: float, tendon_3: float) -> bytes:
+        """Update tendon setpoints (3 floats)"""
+        return struct.pack("<fff", tendon_1, tendon_2, tendon_3)
 
     @staticmethod
     def set_spool_speed(speed: int) -> bytes:
         """Update spool speed (32-bit int)"""
-        payload = struct.pack("<i", speed)
-        return PacketProtocol.create_packet(PacketType.CMD_SET_SPOOL, payload)
+        return struct.pack("<i", speed)
 
 
 class PacketParser:
     """Helper class to parse common packet payloads"""
 
     @staticmethod
-    def parse_status_update(payload: bytes) -> dict[str, Any]:
+    def parse_status_update(payload: bytes) -> PacketModels.StatusUpdate | None:
         """Parse status update payload (example: mode, state, uptime)"""
         if len(payload) >= 6:
             mode, state, uptime = struct.unpack("<BBI", payload[:6])
-            return {"mode": mode, "state": state, "uptime_ms": uptime}
-        return {}
+            return PacketModels.StatusUpdate(mode, state, uptime)
+        return None
 
     @staticmethod
     def parse_sensor_data(payload: bytes) -> dict[str, Any]:
@@ -324,17 +326,20 @@ class PacketStream(QObject):
                 self.packets_invalid += 1
                 self.error_occurred.emit(f"Invalid packet received: {packet.hex()}")
 
-    def send_packet(self, packet_type: PacketType, payload: bytes = b"") -> bool:
+    def send_packet(
+        self, packet_type: PacketType, payload: bytes = b"", throw_error: bool = True
+    ) -> bool:
         """Send a packet"""
         try:
             packet = PacketProtocol.create_packet(packet_type, payload)
-            success = self.serial_mgr.send_bytes(packet)
+            success = self.serial_mgr.send_bytes(packet, throw_error)
             if success:
                 self.packets_sent += 1
                 self.packet_sent.emit(packet_type, payload)
             return success
         except Exception as e:
-            self.error_occurred.emit(f"Failed to send packet: {str(e)}")
+            if throw_error:
+                self.error_occurred.emit(f"Failed to send packet: {str(e)}")
             return False
 
     def get_statistics(self) -> dict[str, int]:
