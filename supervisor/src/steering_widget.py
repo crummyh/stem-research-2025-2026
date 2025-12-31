@@ -1,10 +1,10 @@
 import math
 
 from PyQt6.QtCore import QPointF, QSize, Qt
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPen, QPolygonF
+from PyQt6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPolygonF
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
-from config import V_TENDON_1_ANGLE, V_TENDON_2_ANGLE, V_TENDON_3_ANGLE
+from src.config import V_TENDON_1_ANGLE, V_TENDON_2_ANGLE, V_TENDON_3_ANGLE
 
 
 class RobotSteeringWidget(QWidget):
@@ -86,21 +86,15 @@ class RobotSteeringWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # Calculate center and radius
-        # size = min(self.width(), self.height())
-        # center_x = self.width() / 2
-        # center_y = self.height() / 2
-        # body_radius = size * self._body_radius_ratio
-        # tendon_radius = size * self._tendon_length_ratio
-
-        size = min(painter.device().width(), painter.device().height())
-        center_x = painter.device().width() / 2
-        center_y = painter.device().height() / 2
+        size = min(self.width(), self.height())
+        center_x = self.width() / 2
+        center_y = self.height() / 2
         body_radius = size * self._body_radius_ratio
         tendon_radius = size * self._tendon_length_ratio
 
         # Draw body circle
-        painter.setPen(QPen(QColor(156, 163, 175), 2))
-        painter.setBrush(QBrush(QColor(229, 231, 235)))
+        painter.setPen(QPen(self.palette().light().color(), 2))
+        painter.setBrush(QBrush(self.palette().alternateBase().color()))
         painter.drawEllipse(QPointF(center_x, center_y), body_radius, body_radius)
 
         # Draw tendons
@@ -112,7 +106,7 @@ class RobotSteeringWidget(QWidget):
             tendon_radius,
             self._tendon_1_angle,
             self._tendon_1_value,
-            QColor(239, 68, 68),
+            self.palette().highlight().color(),
             "T1",
         )
         self._draw_tendon(
@@ -123,7 +117,7 @@ class RobotSteeringWidget(QWidget):
             tendon_radius,
             self._tendon_2_angle,
             self._tendon_2_value,
-            QColor(16, 185, 129),
+            self.palette().highlight().color(),
             "T2",
         )
         self._draw_tendon(
@@ -134,7 +128,7 @@ class RobotSteeringWidget(QWidget):
             tendon_radius,
             self._tendon_3_angle,
             self._tendon_3_value,
-            QColor(139, 92, 246),
+            self.palette().highlight().color(),
             "T3",
         )
 

@@ -6,13 +6,13 @@ from PyQt6 import QtWidgets
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QKeySequence, QShortcut
 
-import config
-from control import cartesian_to_polar, controller_to_tendon
 from generated_ui.main import Ui_MainWindow
-from input import Axes, Buttons, ControllerThread
-from packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
-from serial_manager import SerialConfig, SerialManager
-from steering_widget import RobotSteeringWidget
+from src import config
+from src.control import cartesian_to_polar, controller_to_tendon
+from src.input import Axes, Buttons, ControllerThread
+from src.packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
+from src.serial_manager import SerialConfig, SerialManager
+from src.steering_widget import RobotSteeringWidget
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -81,7 +81,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Set up custom widgets
         self.steering_widget = RobotSteeringWidget()
-        self.rightLayout.addChildWidget(self.steering_widget)
+        self.tendonInfoLayout.addChildWidget(self.steering_widget)
         self.steering_widget.setMaximumSize(500, 500)
 
         self.testBtn.clicked.connect(self.test_ping)

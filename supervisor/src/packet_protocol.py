@@ -6,7 +6,7 @@ from typing import Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-from serial_manager import SerialManager
+from src.serial_manager import SerialManager
 
 
 class PacketType(IntEnum):

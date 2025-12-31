@@ -1,6 +1,6 @@
 import numpy as np
 
-from config import (
+from src.config import (
     BODY_RADIUS,
     MAX_CURVE,
     TENDON_1_ANGLE,
