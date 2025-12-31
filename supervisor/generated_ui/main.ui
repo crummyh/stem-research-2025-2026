@@ -321,6 +321,9 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <layout class="QHBoxLayout" name="tendonInfoLayout">
           <item>
            <layout class="QVBoxLayout" name="tendonSlidersLayout">
+            <property name="leftMargin">
+             <number>360</number>
+            </property>
             <item>
              <layout class="QHBoxLayout" name="tendon1Layout">
               <item>

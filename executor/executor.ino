@@ -1,5 +1,6 @@
 #include "PacketProtocol.h"
 #include "PositionStepper.h"
+#include "SpeedStepper.h"
 
 #define tempMotorPul 5
 #define tempMotorDir 6
@@ -8,12 +9,11 @@
 // const float PI = 3.14159;
 const int STEPS_PER_REV = 400;
 
-PositionStepper testSteeper(tempMotorPul, tempMotorDir, tempMotorEna, STEPS_PER_REV, false);
+PositionStepper testSteeper(tempMotorPul, tempMotorDir, tempMotorEna, STEPS_PER_REV);
 
 PacketProtocol protocol;
 
 uint8_t mode;
-
 
 float radsToRevs(float rads) {
     return rads * 2 * PI;
@@ -103,6 +103,7 @@ void setup() {
     Serial.begin(115200);
     protocol.begin(&Serial, onPacketReceived);
 
+    testSteeper.setSpeed(30.0);
     testSteeper.start(); // VERY BAD
     testSteeper.startMoveToPosition(400);
 }

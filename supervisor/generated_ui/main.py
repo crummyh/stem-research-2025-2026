@@ -165,6 +165,7 @@ class Ui_MainWindow(object):
         self.tendonInfoLayout = QtWidgets.QHBoxLayout()
         self.tendonInfoLayout.setObjectName("tendonInfoLayout")
         self.tendonSlidersLayout = QtWidgets.QVBoxLayout()
+        self.tendonSlidersLayout.setContentsMargins(360, -1, -1, -1)
         self.tendonSlidersLayout.setObjectName("tendonSlidersLayout")
         self.tendon1Layout = QtWidgets.QHBoxLayout()
         self.tendon1Layout.setObjectName("tendon1Layout")

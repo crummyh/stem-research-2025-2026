@@ -82,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Set up custom widgets
         self.steering_widget = RobotSteeringWidget()
         self.tendonInfoLayout.addChildWidget(self.steering_widget)
-        self.steering_widget.setMaximumSize(500, 500)
+        self.steering_widget.setMaximumSize(400, 400)
 
         self.testBtn.clicked.connect(self.test_ping)
 

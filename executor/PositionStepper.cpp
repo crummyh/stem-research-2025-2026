@@ -5,105 +5,128 @@ PositionStepper::PositionStepper(int pulPin, int dirPin, int enaPin, int stepsPe
     this->pulPin = pulPin;
     this->dirPin = dirPin;
     this->enaPin = enaPin;
+    this->stepsPerRev = stepsPerRev;
+    this->inverseDir = inverseDir;
 
     pinMode(this->pulPin, OUTPUT);
     pinMode(this->dirPin, OUTPUT);
     pinMode(this->enaPin, OUTPUT);
 
-    this->stepsPerRev = stepsPerRev;
-    this->inverseDir = inverseDir;
+    digitalWrite(this->pulPin, LOW);
+    // digitalWrite(this->enaPin, HIGH);
+
     this->stopped = true;
-
-    // this->speed = this->stepsPerRev / 30; // 2 rpm
-    this->setSpeed(this->stepsPerRev / 30.0);
-
-    this->posOverflow = 0;
+    this->movingToTarget = false;
     this->currentPosition = 0;
+    this->targetPosition = 0;
+    this->lastStepTime = 0;
+    this->pulseHigh = false;
+    this->pulseStartTime = 0;
+
+    // Default speed: 2 RPM
+    setSpeed(2.0);
 }
 
-void PositionStepper::setSpeed(float speed) {
-    this->speed = this->stepsPerRev * speed / 60;
+void PositionStepper::setSpeed(float rpm) {
+    // Convert RPM to steps per second
+    this->speed = (rpm * this->stepsPerRev) / 60.0;
+    updateStepInterval();
 }
 
-bool PositionStepper::startMoveToPosition(int pos) {
-    if (this->stopped) {
-        return false;
-    }
-
-    int relativePosition = currentPosition - pos;
-
-    bool isClockwise;
-    if (relativePosition > 0) {
-        if (!inverseDir) {
-            isClockwise = false;
-        } else {
-            isClockwise = true;
-        }
-    } else if (relativePosition < 0) {
-        if (!inverseDir) {
-            isClockwise = true;
-        } else {
-            isClockwise = false;
-        }
+void PositionStepper::updateStepInterval() {
+    // Calculate microseconds between steps
+    if (this->speed > 0) {
+        this->stepInterval = (unsigned long)(1000000.0 / this->speed);
     } else {
-        // Relative position is 0
-        return;
+        this->stepInterval = 1000000; // Very slow default
     }
-
-    if (isClockwise) {
-        digitalWrite(this->dirPin, HIGH);
-        delayMicroseconds(5);
-    } else {
-        digitalWrite(this->dirPin, LOW);
-        delayMicroseconds(5);
-    }
-
-    this->absPosDiff = abs(relativePosition);
-
-    return true;
-}
-
-void PositionStepper::stop() {
-    this->stopped = true;
 }
 
 void PositionStepper::start() {
     this->stopped = false;
-    this->lastLoopTime = micros(); // Make sure time is not counted while stopped
+    // digitalWrite(this->enaPin, LOW);
+    this->lastStepTime = micros();
+}
+
+void PositionStepper::stop() {
+    this->stopped = true;
+    this->movingToTarget = false;
+    // digitalWrite(this->enaPin, HIGH); // Disable motor
+    digitalWrite(this->pulPin, LOW); // Ensure pulse is low
+    this->pulseHigh = false;
+}
+
+bool PositionStepper::startMoveToPosition(long pos) {
+    if (this->stopped) {
+        return false; // Can't move while stopped
+    }
+
+    if (this->movingToTarget) {
+        return false; // Already moving to a position
+    }
+
+    this->targetPosition = pos;
+
+    long stepsToGo = targetPosition - currentPosition;
+
+    if (stepsToGo == 0) {
+        return false; // Already at target
+    }
+
+    // Set direction
+    bool moveForward = stepsToGo > 0;
+
+    // Apply direction inversion if needed
+    bool dirPinState = (moveForward != inverseDir);
+
+    digitalWrite(this->dirPin, dirPinState ? HIGH : LOW);
+    delayMicroseconds(5); // Direction setup time for driver
+
+    this->movingToTarget = true;
+    this->lastStepTime = micros();
+    this->pulseHigh = false;
+
+    return true;
 }
 
 void PositionStepper::updatePosition() {
-    unsigned int deltaTime = micros() - this->lastLoopTime;
-
-    if (this->stopped) {
+    if (stopped || !movingToTarget) {
         return;
     }
 
-    if (this->absPosDiff == 0) {
-        return;
+    unsigned long currentTime = micros();
+
+    // Handle pulse completion (bring pulse low after PULSE_WIDTH_US)
+    if (pulseHigh && (currentTime - pulseStartTime >= PULSE_WIDTH_US)) {
+        digitalWrite(pulPin, LOW);
+        pulseHigh = false;
     }
 
-    float neededStepsF = ((float) this->speed / 1000000) * deltaTime;
-    int neededSteps = neededStepsF;
-    this->posOverflow += neededStepsF - neededSteps;
+    // Check if it's time for the next step
+    if (!pulseHigh && (currentTime - lastStepTime >= stepInterval)) {
+        long stepsToGo = targetPosition - currentPosition;
 
-    if (posOverflow > 1) {
-        int intOverflowValue = (int) posOverflow;
-        this->posOverflow -= intOverflowValue;
-        neededSteps += intOverflowValue;
+        if (stepsToGo == 0) {
+            // Reached target
+            movingToTarget = false;
+            return;
+        }
+
+        // Generate step pulse
+        digitalWrite(pulPin, HIGH);
+        pulseHigh = true;
+        pulseStartTime = currentTime;
+        lastStepTime = currentTime;
+
+        // Update position based on direction
+        if (stepsToGo > 0) {
+            currentPosition++;
+        } else {
+            currentPosition--;
+        }
     }
-
-    for (int i = 0; i < neededSteps && this->absPosDiff > 0; i++) {
-        digitalWrite(this->pulPin, HIGH);
-        delayMicroseconds(3);
-        digitalWrite(this->pulPin, LOW);
-        this->absPosDiff -= 1;
-        delayMicroseconds(3);
-    }
-
-    this->lastLoopTime = micros();
 }
 
 int PositionStepper::rotationsToSteps(float rotations) {
-    return (int) (rotations * this->stepsPerRev);
+    return (int)(rotations * this->stepsPerRev);
 }
