@@ -368,6 +368,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 def run():
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationName("Stem Reserch 2025-2026")
 
     window = MainWindow()
     window.show()
