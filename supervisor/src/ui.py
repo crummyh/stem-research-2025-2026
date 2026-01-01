@@ -8,7 +8,7 @@ from PyQt6.QtGui import QKeySequence, QShortcut
 
 from generated_ui.main import Ui_MainWindow
 from src import config
-from src.control import cartesian_to_polar, controller_to_tendon
+from src.control import cartesian_to_polar, controller_to_spool, controller_to_tendon
 from src.input import Axes, Buttons, ControllerThread
 from src.packet_protocol import PacketBuilder, PacketParser, PacketStream, PacketType
 from src.serial_manager import SerialConfig, SerialManager
@@ -78,6 +78,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.controller_thread.axis_motion.connect(self.on_axis_motion)
 
         self.controllerStatusBtn.clicked.connect(self.controller_connect_btn)
+
+        # Conect settings
+        self.spoolSpeedModifier = 0
+        self.spoolSpeedSettingSlider.setMinimum(0)
+        self.spoolSpeedSettingSlider.setMaximum(int(config.MAX_SPOOL_SPEED * 100))
+        self.spoolSpeedSettingSlider.sliderMoved.connect(
+            self.on_spool_speed_slider_update
+        )
 
         # Set up custom widgets
         self.steering_widget = RobotSteeringWidget()
@@ -153,6 +161,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.packet_stream.send_packet(PacketType.PING, PacketBuilder.ping(), False)
         self.mcu_connection_attempts -= 1
+
+    def on_spool_speed_slider_update(self):
+        self.spoolSpeedModifier = float(self.spoolSpeedSettingSlider.value()) / 100
 
     def controller_connect_btn(self):
         if self.controller_thread.isRunning():
@@ -358,6 +369,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tendon1Progress.setValue(int(tendon_values[0] * 100))
             self.tendon2Progress.setValue(int(tendon_values[1] * 100))
             self.tendon3Progress.setValue(int(tendon_values[2] * 100))
+
+        elif axis_id == Axes.LEFT_TRIGGER or axis_id == Axes.RIGHT_TRIGGER:
+            speed = controller_to_spool(
+                round(self.left_trigger, 2),
+                round(self.right_trigger, 2),
+                self.spoolSpeedModifier,
+            )
+            self.packet_stream.send_packet(
+                PacketType.CMD_SET_SPOOL, PacketBuilder.set_spool_speed(speed)
+            )
 
     def closeEvent(self, a0):
         """Clean up when window closes."""

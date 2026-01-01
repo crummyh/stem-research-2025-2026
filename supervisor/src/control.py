@@ -1,8 +1,13 @@
+from turtle import speed
+
 import numpy as np
+from numpy.matlib import spacing
 
 from src.config import (
     BODY_RADIUS,
     MAX_CURVE,
+    MAX_SPOOL_SPEED,
+    MIN_SPOOL_SPEED,
     TENDON_1_ANGLE,
     TENDON_2_ANGLE,
     TENDON_3_ANGLE,
@@ -36,3 +41,24 @@ def controller_to_tendon(x: float, y: float) -> tuple[float, float, float]:
     polar = cartesian_to_polar(x, y)
 
     return get_tendon_steering(*polar)
+
+
+# Assumes that left and right are exculusive and between 0 and 1
+def controller_to_spool(left: float, right: float, speed_modifier: float) -> float:
+    if left != 0 and right != 0:
+        raise ValueError("The left and right values must be exclusive")
+
+    result = 0.0
+    if right != 0:
+        result = speed_modifier * right
+    elif left != 0:
+        result = -1 * speed_modifier * left  # Invert values on the left
+    else:
+        result = 0
+
+    if result > MAX_SPOOL_SPEED or result < MIN_SPOOL_SPEED:
+        raise ArithmeticError(
+            f"Opperation resulted with {result}, which is either larger then the max speed or smaller then the min speed"
+        )
+
+    return result

@@ -215,9 +215,9 @@ class PacketBuilder:
         return struct.pack("<fff", tendon_1, tendon_2, tendon_3)
 
     @staticmethod
-    def set_spool_speed(speed: int) -> bytes:
-        """Update spool speed (32-bit int)"""
-        return struct.pack("<i", speed)
+    def set_spool_speed(speed: float) -> bytes:
+        """Update spool speed (float)"""
+        return struct.pack("<f", speed)
 
 
 class PacketParser:

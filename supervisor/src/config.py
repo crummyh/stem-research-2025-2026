@@ -12,6 +12,8 @@ V_TENDON_1_ANGLE = 0
 V_TENDON_2_ANGLE = 2 * pi / 3
 V_TENDON_3_ANGLE = 4 * pi / 3
 
+MIN_SPOOL_SPEED = -1.5  # rpm
+MAX_SPOOL_SPEED = 1.5  # rpm
 
 BODY_DIAMETER = 0.0254  # Meters (3 inches)
 TENDON_SPOOL_DIAMETER = 0.0254  # Meters (1 inch)
