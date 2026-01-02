@@ -1,3 +1,4 @@
+import traceback
 from enum import Enum
 
 from PyQt6.QtCore import QIODevice, QObject, pyqtSignal, pyqtSlot
@@ -165,6 +166,7 @@ class SerialManager(QObject):
         Returns:
             True if successful, False otherwise
         """
+
         if not self.is_connected():
             self.error_occurred.emit("Not connected to any port")
             return False
@@ -190,6 +192,7 @@ class SerialManager(QObject):
         Returns:
             True if successful, False otherwise
         """
+
         if not self.is_connected():
             if throw_error:
                 self.error_occurred.emit("Not connected to any port")
