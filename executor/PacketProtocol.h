@@ -105,9 +105,9 @@ public:
 
     // Parse motor control packets
     static bool parseTendons(const uint8_t* payload, uint8_t length,
-                               int32_t& motor1, int32_t& motor2, int32_t& motor3);
+                               float& motor1, float& motor2, float& motor3);
     static bool parseSpool(const uint8_t* payload, uint8_t length,
-                                int32_t& motorSteps);
+                                float& motorSteps);
 
     // Parse sensor read request
     static bool parseReadSensor(const uint8_t* payload, uint8_t length,

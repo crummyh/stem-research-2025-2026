@@ -9,4 +9,5 @@ dependencies = [
     "pygame>=2.6.1",
     "pyqt6==6.4.2",
     "pyqt6-tools>=6.4.2.3.3",
+    "setuptools>=80.9.0",
 ]

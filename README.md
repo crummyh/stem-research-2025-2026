@@ -2,3 +2,5 @@
 
 STEM Research 2025-2026
 
+## Todo
+* Define nack codes

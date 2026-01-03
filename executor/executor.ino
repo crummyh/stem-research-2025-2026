@@ -1,19 +1,36 @@
 #include "PacketProtocol.h"
 #include "PositionStepper.h"
+#include "ContinuousStepper.h"
 
-#define tempMotorPul 5
-#define tempMotorDir 6
-#define tempMotorEna 7
+// Enable pin is not used right now
+#define tendon1MotorPul 5
+#define tendon1MotorDir 4
+// #define tendon1MotorEna 4
 
-// const float PI = 3.14159;
-const int STEPS_PER_REV = 400;
+#define tendon2MotorPul 3
+#define tendon2MotorDir 2
+// #define tendon2MotorEna 1
 
-PositionStepper testSteeper(tempMotorPul, tempMotorDir, tempMotorEna, STEPS_PER_REV, false);
+#define tendon3MotorPul 12
+#define tendon3MotorDir 11
+// #define tendon3MotorEna 10
+
+#define spoolMotorPul 10
+#define spoolMotorDir 9
+// #define spoolMotorEna 7
+
+const int TENDON_STEPS_PER_REV = 400;
+const int SPOOL_STEPS_PER_REV = 47 * 400; // 47:1 and 400 steps per rev
+
+PositionStepper tendon1Motor(tendon1MotorPul, tendon1MotorDir, 13, TENDON_STEPS_PER_REV);
+PositionStepper tendon2Motor(tendon2MotorPul, tendon2MotorDir, 13, TENDON_STEPS_PER_REV);
+PositionStepper tendon3Motor(tendon3MotorPul, tendon3MotorDir, 13, TENDON_STEPS_PER_REV);
+
+ContinuousStepper spoolMotor(spoolMotorPul, spoolMotorDir, 13, SPOOL_STEPS_PER_REV);
 
 PacketProtocol protocol;
 
 uint8_t mode;
-
 
 float radsToRevs(float rads) {
     return rads * 2 * PI;
@@ -29,12 +46,18 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
             break;
 
         case CMD_START:
-            testSteeper.start();
+            tendon1Motor.start();
+            tendon2Motor.start();
+            tendon3Motor.start();
+            spoolMotor.start();
             protocol.sendAck();
             break;
 
         case CMD_STOP:
-            testSteeper.stop();
+            tendon1Motor.stop();
+            tendon2Motor.stop();
+            tendon3Motor.stop();
+            spoolMotor.stop();
             protocol.sendAck();
             break;
 
@@ -58,22 +81,25 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
         }
 
         case CMD_SET_TENDONS: {
-            int32_t m1, m2, m3;
+            float m1, m2, m3;
             if (PacketParser::parseTendons(payload, length, m1, m2, m3)) {
-                // Control 3 motors
-                // moveStepper1(m1);
-                // moveStepper2(m2);
-                // moveStepper3(m3);
+                if (!(
+                    tendon1Motor.startMoveToPosition(tendon1Motor.rotationsToSteps(radsToRevs(m1))) &&
+                    tendon2Motor.startMoveToPosition(tendon2Motor.rotationsToSteps(radsToRevs(m2))) &&
+                    tendon3Motor.startMoveToPosition(tendon3Motor.rotationsToSteps(radsToRevs(m3)))
+                )) {
+                    protocol.sendNack(0x00);
+                    break;
+                }
                 protocol.sendAck();
             }
             break;
         }
 
         case CMD_SET_SPOOL: {
-            int32_t steps;
-            if (PacketParser::parseSpool(payload, length, steps)) {
-                // Control single motor
-                // moveStepper4(steps);
+            float speed; // rpm
+            if (PacketParser::parseSpool(payload, length, speed)) {
+                spoolMotor.setSpeed(speed);
                 protocol.sendAck();
             }
             break;
@@ -102,9 +128,6 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
 void setup() {
     Serial.begin(115200);
     protocol.begin(&Serial, onPacketReceived);
-
-    testSteeper.start(); // VERY BAD
-    testSteeper.startMoveToPosition(400);
 }
 
 void loop() {
@@ -118,5 +141,8 @@ void loop() {
         lastStatus = millis();
     }
 
-    testSteeper.updatePosition();
+    tendon1Motor.updatePosition();
+    tendon2Motor.updatePosition();
+    tendon3Motor.updatePosition();
+    spoolMotor.run();
 }
