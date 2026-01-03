@@ -69,9 +69,9 @@ bool PositionStepper::startMoveToPosition(long pos) {
 
     long stepsToGo = targetPosition - currentPosition;
 
-    if (stepsToGo == 0) {
-        return false; // Already at target
-    }
+    // if (stepsToGo == 0) {
+    //     return false; // Already at target
+    // }
 
     // Set direction
     bool moveForward = stepsToGo > 0;
