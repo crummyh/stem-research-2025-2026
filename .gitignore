@@ -217,3 +217,5 @@ __marimo__/
 
 # KiCAD
 circuit_design/stem-research/stem-research-backups
+
+.virtual_documents/

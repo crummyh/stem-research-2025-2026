@@ -1,4 +1,4 @@
-from numpy import pi
+from numpy import cos, pi
 
 CONTROLLER_POLL_RATE = 0.05
 MCU_BAUD_RATE = 115200
@@ -21,3 +21,4 @@ BODY_RADIUS = BODY_DIAMETER / 2
 TENDON_SPOOL_RADIUS = TENDON_SPOOL_DIAMETER / 2
 
 MAX_CURVE = 1.5  # radians per meter
+MAX_TENDON_VALUE = (MAX_CURVE * BODY_RADIUS * cos(0)) / TENDON_SPOOL_RADIUS

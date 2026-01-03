@@ -1,7 +1,6 @@
 import sys
 from datetime import datetime
 from enum import Enum
-from random import randint
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QTimer
@@ -22,7 +21,7 @@ class ControllerStatus(str, Enum):
 
 
 class McuConnectionStatus(str, Enum):
-    DISSCONNECTED = "disconnected"
+    DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
     CONNECTED = "connected"
 
@@ -63,8 +62,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.statusbar.addPermanentWidget(self.statusbar_controller_connection)
 
         # Init MCU stats
-        self.mcu_connection_status = McuConnectionStatus.DISSCONNECTED
-        self._set_mcu_status(McuConnectionStatus.DISSCONNECTED, True)
+        self.mcu_connection_status = McuConnectionStatus.DISCONNECTED
+        self._set_mcu_status(McuConnectionStatus.DISCONNECTED, True)
 
         self.mcu_connect_timer = QTimer(self)
         self.mcu_connect_timer.timeout.connect(self.mcu_connection_attempt)
@@ -83,12 +82,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             " QPushButton { background-color: red; color: white; } "
         )
 
-        self.tendon1Progress.setMaximum(int(config.MAX_CURVE * 100))
-        self.tendon1Progress.setMinimum(int(config.MAX_CURVE * -100))
-        self.tendon2Progress.setMaximum(int(config.MAX_CURVE * 100))
-        self.tendon2Progress.setMinimum(int(config.MAX_CURVE * -100))
-        self.tendon3Progress.setMaximum(int(config.MAX_CURVE * 100))
-        self.tendon3Progress.setMinimum(int(config.MAX_CURVE * -100))
+        self.tendon1Progress.setMaximum(int(config.MAX_TENDON_VALUE * 100))
+        self.tendon1Progress.setMinimum(int(config.MAX_TENDON_VALUE * -100))
+        self.tendon2Progress.setMaximum(int(config.MAX_TENDON_VALUE * 100))
+        self.tendon2Progress.setMinimum(int(config.MAX_TENDON_VALUE * -100))
+        self.tendon3Progress.setMaximum(int(config.MAX_TENDON_VALUE * 100))
+        self.tendon3Progress.setMinimum(int(config.MAX_TENDON_VALUE * -100))
 
         # Controller values
         self.left_x = 0.0
@@ -109,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.controllerStatusBtn.clicked.connect(self.controller_connect_btn)
 
-        # Conect settings
+        # Connect settings
         self.spoolSpeedModifier = 0
         self.spoolSpeedSettingSlider.setMinimum(0)
         self.spoolSpeedSettingSlider.setMaximum(int(config.MAX_SPOOL_SPEED * 100))
@@ -117,21 +116,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.on_spool_speed_slider_update
         )
 
+        self.spoolSpeedProgress.setMinimum(0)
+        self.spoolSpeedProgress.setMaximum(int(config.MAX_SPOOL_SPEED * 100))
+
         # Set up custom widgets
         self.steering_widget = RobotSteeringWidget()
         self.tendonInfoLayout.addChildWidget(self.steering_widget)
         self.steering_widget.setMaximumSize(400, 400)
 
-        self.testBtn.clicked.connect(self.test_ping)
-
-    def test_ping(self):
-        self.packet_stream.send_packet(
-            PacketType.CMD_SET_MODE, PacketBuilder.set_mode(randint(0, 255))
-        )
-
     def mcu_connect_btn(self):
         if self.serial_mgr.is_connected():
-            self._set_mcu_status(McuConnectionStatus.DISSCONNECTED)
+            self._set_mcu_status(McuConnectionStatus.DISCONNECTED)
 
         else:
             self._set_mcu_status(McuConnectionStatus.CONNECTING)
@@ -274,10 +269,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif axis_id == Axes.RIGHT_Y:
                 self.right_y = 0
 
-        self.tempControllerText.setText(
-            f"n\n\n\n\n\n\n\nX:{self.left_x} Y:{self.left_y}"
-        )
-
         if (
             self.mcu_connection_status == McuConnectionStatus.CONNECTED
             and self.mcu_activation_status == ActivationStatus.ENABLED
@@ -308,6 +299,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     round(self.right_trigger, 2),
                     self.spoolSpeedModifier,
                 )
+                self.spoolSpeedProgress.setValue(int(abs(speed) * 100))
+                self.spoolSpeedProgress.setFormat(f"{speed:.2f} rpm")
                 self.packet_stream.send_packet(
                     PacketType.CMD_SET_SPOOL, PacketBuilder.set_spool_speed(speed)
                 )
@@ -319,11 +312,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         a0.accept()
 
     def _set_mcu_status(self, status: McuConnectionStatus, visual_only: bool = False):
-        if status == McuConnectionStatus.DISSCONNECTED:
+        if status == McuConnectionStatus.DISCONNECTED:
             if not visual_only:
                 self.packet_stream.send_packet(PacketType.CMD_STOP)
                 self.serial_mgr.disconnect()
-                self.mcu_connection_status = McuConnectionStatus.DISSCONNECTED
+                self.mcu_connection_status = McuConnectionStatus.DISCONNECTED
 
             self.activationButton.setStyleSheet(
                 " QPushButton { background-color: red; } "

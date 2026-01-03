@@ -98,19 +98,6 @@ class Ui_MainWindow(object):
         self.spoolSpeedSettingSlider.setObjectName("spoolSpeedSettingSlider")
         self.spoolSpeedSettingLayout.addWidget(self.spoolSpeedSettingSlider)
         self.verticalLayout.addLayout(self.spoolSpeedSettingLayout)
-        self.steeringSensitivtySettingLayout = QtWidgets.QHBoxLayout()
-        self.steeringSensitivtySettingLayout.setObjectName("steeringSensitivtySettingLayout")
-        self.SteeringSensitivityLabel = QtWidgets.QLabel(parent=self.mainTab)
-        self.SteeringSensitivityLabel.setObjectName("SteeringSensitivityLabel")
-        self.steeringSensitivtySettingLayout.addWidget(self.SteeringSensitivityLabel)
-        self.SteeringSensitivitySlider = QtWidgets.QSlider(parent=self.mainTab)
-        self.SteeringSensitivitySlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
-        self.SteeringSensitivitySlider.setObjectName("SteeringSensitivitySlider")
-        self.steeringSensitivtySettingLayout.addWidget(self.SteeringSensitivitySlider)
-        self.verticalLayout.addLayout(self.steeringSensitivtySettingLayout)
-        self.tempControllerText = QtWidgets.QLabel(parent=self.mainTab)
-        self.tempControllerText.setObjectName("tempControllerText")
-        self.verticalLayout.addWidget(self.tempControllerText)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.activationButton = QtWidgets.QPushButton(parent=self.mainTab)
@@ -136,9 +123,6 @@ class Ui_MainWindow(object):
         self.activationButton.setFlat(False)
         self.activationButton.setObjectName("activationButton")
         self.verticalLayout.addWidget(self.activationButton)
-        self.testBtn = QtWidgets.QPushButton(parent=self.mainTab)
-        self.testBtn.setObjectName("testBtn")
-        self.verticalLayout.addWidget(self.testBtn)
         self.tabs.addTab(self.mainTab, "")
         self.logTab = QtWidgets.QWidget()
         self.logTab.setObjectName("logTab")
@@ -159,9 +143,6 @@ class Ui_MainWindow(object):
         self.rightLayout = QtWidgets.QVBoxLayout(self.rightFrame)
         self.rightLayout.setContentsMargins(-1, -1, 1, -1)
         self.rightLayout.setObjectName("rightLayout")
-        self.pushButton = QtWidgets.QPushButton(parent=self.rightFrame)
-        self.pushButton.setObjectName("pushButton")
-        self.rightLayout.addWidget(self.pushButton)
         self.tendonInfoLayout = QtWidgets.QHBoxLayout()
         self.tendonInfoLayout.setObjectName("tendonInfoLayout")
         self.tendonSlidersLayout = QtWidgets.QVBoxLayout()
@@ -211,6 +192,7 @@ class Ui_MainWindow(object):
         self.actionSettings.setObjectName("actionSettings")
 
         self.retranslateUi(MainWindow)
+        self.tabs.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -226,10 +208,7 @@ class Ui_MainWindow(object):
         self.mcuSearchBtn.setText(_translate("MainWindow", "Search"))
         self.mcuStatusBtn.setText(_translate("MainWindow", "Connect"))
         self.spoolSpeedSettingLabel.setText(_translate("MainWindow", "Spool Speed: "))
-        self.SteeringSensitivityLabel.setText(_translate("MainWindow", "Steering Sensitivity: "))
-        self.tempControllerText.setText(_translate("MainWindow", "TextLabel"))
         self.activationButton.setText(_translate("MainWindow", "Disabled"))
-        self.testBtn.setText(_translate("MainWindow", "Test Button"))
         self.tabs.setTabText(self.tabs.indexOf(self.mainTab), _translate("MainWindow", "Tab 1"))
         self.serialText.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
@@ -237,10 +216,9 @@ class Ui_MainWindow(object):
 "hr { height: 1px; border-width: 0; }\n"
 "li.unchecked::marker { content: \"\\2610\"; }\n"
 "li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:\'Monospace\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:9pt;\"><br /></p></body></html>"))
+"</style></head><body style=\" font-family:\'Monospace\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
         self.tabs.setTabText(self.tabs.indexOf(self.logTab), _translate("MainWindow", "Tab 2"))
-        self.pushButton.setText(_translate("MainWindow", "TEMP!!!"))
         self.tendon1Label.setText(_translate("MainWindow", "Tendon 1: "))
         self.tendon2Label.setText(_translate("MainWindow", "Tendon 2: "))
         self.tendon3Label.setText(_translate("MainWindow", "Tendon 3: "))

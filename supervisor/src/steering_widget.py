@@ -1,10 +1,10 @@
 import math
 
 from PyQt6.QtCore import QPointF, QSize, Qt
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPalette, QPen, QPolygonF
+from PyQt6.QtGui import QBrush, QPainter, QPen, QPolygonF
 from PyQt6.QtWidgets import QSizePolicy, QWidget
 
-from src.config import V_TENDON_1_ANGLE, V_TENDON_2_ANGLE, V_TENDON_3_ANGLE
+from src.config import TENDON_1_ANGLE, TENDON_2_ANGLE, TENDON_3_ANGLE
 
 
 class RobotSteeringWidget(QWidget):
@@ -24,9 +24,9 @@ class RobotSteeringWidget(QWidget):
         )
 
         # Tendon angles (in radians, from positive x-axis)
-        self._tendon_1_angle = V_TENDON_1_ANGLE
-        self._tendon_2_angle = V_TENDON_2_ANGLE
-        self._tendon_3_angle = V_TENDON_3_ANGLE
+        self._tendon_1_angle = TENDON_1_ANGLE
+        self._tendon_2_angle = TENDON_2_ANGLE
+        self._tendon_3_angle = TENDON_3_ANGLE
 
         # Tendon values (motor positions in radians)
         self._tendon_1_value = 0.0
@@ -141,7 +141,7 @@ class RobotSteeringWidget(QWidget):
     ):
         """Draw a single tendon with its line, circle, and label."""
         # Convert angle to Qt coordinate system (y-axis is inverted)
-        qt_angle = angle - math.pi / 2
+        qt_angle = angle * -1
 
         # Calculate positions
         body_x = cx + body_r * math.cos(qt_angle)
@@ -175,13 +175,13 @@ class RobotSteeringWidget(QWidget):
         painter.setPen(QPen(Qt.GlobalColor.white))
         value_text = f"{value:.2f}"
         # For small values, draw text next to circle
-        if abs(value) < 0.3:
-            text_offset = 15
-            text_x = tendon_x + text_offset * math.cos(qt_angle)
-            text_y = tendon_y + text_offset * math.sin(qt_angle)
-        else:
-            text_x = tendon_x
-            text_y = tendon_y
+        # if abs(value) < 0.3:
+        # text_offset = 15
+        # text_x = tendon_x + text_offset * math.cos(qt_angle)
+        # text_y = tendon_y + text_offset * math.sin(qt_angle)
+        # else:
+        text_x = tendon_x
+        text_y = tendon_y
 
         # Calculate text bounds for centering (approximate)
         text_width = len(value_text) * 7
@@ -190,7 +190,7 @@ class RobotSteeringWidget(QWidget):
     def _draw_steering_arrow(self, painter, cx, cy, length):
         """Draw an arrow indicating the steering direction."""
         # Convert angle to Qt coordinate system
-        qt_angle = self._steering_angle - math.pi / 2
+        qt_angle = self._steering_angle * -1
 
         # Calculate arrow end point (scaled by magnitude)
         arrow_length = length * self._steering_magnitude
@@ -198,7 +198,7 @@ class RobotSteeringWidget(QWidget):
         end_y = cy + arrow_length * math.sin(qt_angle)
 
         # Draw arrow line
-        painter.setPen(QPen(QColor(59, 130, 246), 3))
+        painter.setPen(QPen(self.palette().highlight().color(), 3))
         painter.drawLine(QPointF(cx, cy), QPointF(end_x, end_y))
 
         # Draw arrowhead
@@ -215,5 +215,5 @@ class RobotSteeringWidget(QWidget):
             [QPointF(end_x, end_y), QPointF(p1_x, p1_y), QPointF(p2_x, p2_y)]
         )
 
-        painter.setBrush(QBrush(QColor(59, 130, 246)))
+        painter.setBrush(self.palette().highlight())
         painter.drawPolygon(arrow_polygon)
