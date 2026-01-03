@@ -61,9 +61,9 @@ bool PositionStepper::startMoveToPosition(long pos) {
         return false; // Can't move while stopped
     }
 
-    if (this->movingToTarget) {
-        return false; // Already moving to a position
-    }
+    // if (this->movingToTarget) {
+    //     return false; // Already moving to a position
+    // }
 
     this->targetPosition = pos;
 

@@ -1,6 +1,8 @@
 #ifndef CONTINUOUS_STEPPER_H
 #define CONTINUOUS_STEPPER_H
 
+#include <Arduino.h>
+
 class ContinuousStepper {
 private:
     int pulPin;

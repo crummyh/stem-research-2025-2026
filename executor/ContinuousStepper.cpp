@@ -70,7 +70,7 @@ void ContinuousStepper::start() {
 
 void ContinuousStepper::stop() {
     this->stopped = true;
-    digitalWrite(this->enaPin, HIGH); // Disable motor
+    // digitalWrite(this->enaPin, HIGH);
     digitalWrite(this->pulPin, LOW); // Ensure pulse is low
     this->pulseHigh = false;
 }

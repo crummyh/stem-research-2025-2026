@@ -200,7 +200,7 @@ bool PacketParser::parseSetParamFloat(const uint8_t* payload, uint8_t length,
 }
 
 bool PacketParser::parseTendons(const uint8_t* payload, uint8_t length,
-                                   int32_t& motor1, int32_t& motor2, int32_t& motor3) {
+                                   float& motor1, float& motor2, float& motor3) {
     if (length < 12) return false;
     memcpy(&motor1, &payload[0], 4);
     memcpy(&motor2, &payload[4], 4);
@@ -209,9 +209,9 @@ bool PacketParser::parseTendons(const uint8_t* payload, uint8_t length,
 }
 
 bool PacketParser::parseSpool(const uint8_t* payload, uint8_t length,
-                                    float& motorSteps) {
+                                    float& motorSpeed) {
     if (length < 4) return false;
-    memcpy(&motorSteps, payload, 4);
+    memcpy(&motorSpeed, payload, 4);
     return true;
 }
 
