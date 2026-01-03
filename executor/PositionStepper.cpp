@@ -121,8 +121,10 @@ void PositionStepper::updatePosition() {
         // Update position based on direction
         if (stepsToGo > 0) {
             currentPosition++;
-        } else {
+        } else if (stepsToGo < 0) {
             currentPosition--;
+        } else {
+            currentPosition = targetPosition;
         }
     }
 }
