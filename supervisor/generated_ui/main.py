@@ -98,6 +98,16 @@ class Ui_MainWindow(object):
         self.spoolSpeedSettingSlider.setObjectName("spoolSpeedSettingSlider")
         self.spoolSpeedSettingLayout.addWidget(self.spoolSpeedSettingSlider)
         self.verticalLayout.addLayout(self.spoolSpeedSettingLayout)
+        self.tendonSpeedSettingLayout = QtWidgets.QHBoxLayout()
+        self.tendonSpeedSettingLayout.setObjectName("tendonSpeedSettingLayout")
+        self.tendonSpeedSettingLabel = QtWidgets.QLabel(parent=self.mainTab)
+        self.tendonSpeedSettingLabel.setObjectName("tendonSpeedSettingLabel")
+        self.tendonSpeedSettingLayout.addWidget(self.tendonSpeedSettingLabel)
+        self.tendonSpeedSettingSlider = QtWidgets.QSlider(parent=self.mainTab)
+        self.tendonSpeedSettingSlider.setOrientation(QtCore.Qt.Orientation.Horizontal)
+        self.tendonSpeedSettingSlider.setObjectName("tendonSpeedSettingSlider")
+        self.tendonSpeedSettingLayout.addWidget(self.tendonSpeedSettingSlider)
+        self.verticalLayout.addLayout(self.tendonSpeedSettingLayout)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.activationButton = QtWidgets.QPushButton(parent=self.mainTab)
@@ -208,6 +218,7 @@ class Ui_MainWindow(object):
         self.mcuSearchBtn.setText(_translate("MainWindow", "Search"))
         self.mcuStatusBtn.setText(_translate("MainWindow", "Connect"))
         self.spoolSpeedSettingLabel.setText(_translate("MainWindow", "Spool Speed: "))
+        self.tendonSpeedSettingLabel.setText(_translate("MainWindow", "Tendon Speed: "))
         self.activationButton.setText(_translate("MainWindow", "Disabled"))
         self.tabs.setTabText(self.tabs.indexOf(self.mainTab), _translate("MainWindow", "Tab 1"))
         self.serialText.setHtml(_translate("MainWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
@@ -216,8 +227,8 @@ class Ui_MainWindow(object):
 "hr { height: 1px; border-width: 0; }\n"
 "li.unchecked::marker { content: \"\\2610\"; }\n"
 "li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:\'Monospace\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
+"</style></head><body style=\" font-family:\'Monospace\'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:9pt;\"><br /></p></body></html>"))
         self.tabs.setTabText(self.tabs.indexOf(self.logTab), _translate("MainWindow", "Tab 2"))
         self.tendon1Label.setText(_translate("MainWindow", "Tendon 1: "))
         self.tendon2Label.setText(_translate("MainWindow", "Tendon 2: "))

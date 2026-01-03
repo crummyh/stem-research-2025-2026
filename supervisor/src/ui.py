@@ -89,6 +89,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tendon3Progress.setMaximum(int(config.MAX_TENDON_VALUE * 100))
         self.tendon3Progress.setMinimum(int(config.MAX_TENDON_VALUE * -100))
 
+        self.tendonSpeedSettingSlider.setMinimum(0)
+        self.tendonSpeedSettingSlider.setMaximum(config.MAX_TENDON_SPEED)
+        self.tendonSpeedSettingSlider.valueChanged.connect(
+            self.on_tendon_speed_slider_update
+        )
+
         # Controller values
         self.left_x = 0.0
         self.left_y = 0.0
@@ -112,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spoolSpeedModifier = 0
         self.spoolSpeedSettingSlider.setMinimum(0)
         self.spoolSpeedSettingSlider.setMaximum(int(config.MAX_SPOOL_SPEED * 100))
-        self.spoolSpeedSettingSlider.sliderMoved.connect(
+        self.spoolSpeedSettingSlider.valueChanged.connect(
             self.on_spool_speed_slider_update
         )
 
@@ -142,6 +148,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_spool_speed_slider_update(self):
         self.spoolSpeedModifier = float(self.spoolSpeedSettingSlider.value()) / 100
+
+    def on_tendon_speed_slider_update(self):
+        self.packet_stream.send_packet(
+            PacketType.CMD_SET_PARAM,
+            PacketBuilder.set_param(
+                config.MCU_PRAMS.TENDON_MOTOR_SPEED,
+                self.tendonSpeedSettingSlider.value(),
+            ),
+        )
 
     def controller_connect_btn(self):
         if self.controller_thread.isRunning():

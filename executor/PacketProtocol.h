@@ -98,6 +98,8 @@ private:
 class PacketParser {
 public:
     // Parse CMD_SET_PARAM payload
+    static bool parseSetParamId(const uint8_t* payloat, uint8_t length,
+                                uint8_t& paramID);
     static bool parseSetParam(const uint8_t* payload, uint8_t length,
                              uint8_t& paramId, int32_t& value);
     static bool parseSetParamFloat(const uint8_t* payload, uint8_t length,

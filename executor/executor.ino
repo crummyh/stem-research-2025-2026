@@ -2,6 +2,8 @@
 #include "PositionStepper.h"
 #include "ContinuousStepper.h"
 
+#define MAX_PARAMS 2
+
 // Enable pin is not used right now
 #define tendon1MotorPul 5
 #define tendon1MotorDir 4
@@ -21,6 +23,22 @@
 
 const int TENDON_STEPS_PER_REV = 400;
 const int SPOOL_STEPS_PER_REV = 47 * 400; // 47:1 and 400 steps per rev
+
+// Params
+enum ParamType { PARAM_FLOAT, PARAM_INT32 };
+
+struct Parameter {
+  void* ptr;
+  ParamType type;
+};
+
+Parameter params[MAX_PARAMS];
+
+int32_t param_tendon_speed = 0;
+
+void initParams() {
+    params[0] = {&param_tendon_speed, PARAM_INT32};
+}
 
 PositionStepper tendon1Motor(tendon1MotorPul, tendon1MotorDir, 13, TENDON_STEPS_PER_REV);
 PositionStepper tendon2Motor(tendon2MotorPul, tendon2MotorDir, 13, TENDON_STEPS_PER_REV);
@@ -72,12 +90,37 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
 
         case CMD_SET_PARAM: {
             uint8_t paramId;
-            float value;
-            if (PacketParser::parseSetParamFloat(payload, length, paramId, value)) {
-                // Handle parameter setting
-                protocol.sendAck();
+            if (paramId >= MAX_PARAMS || params[paramId].ptr == nullptr) {
+                protocol.sendNack();
+                return;
+            };
+
+            if (PacketParser::parseSetParamId(payload, length, paramId)) {
+                if (params[paramId].type == PARAM_FLOAT) {
+                    float value;
+                    if (PacketParser::parseSetParamFloat(payload, length, paramId, value)) {
+                        *(float*)params[paramId].ptr = value;
+                    } else {
+                        protocol.sendNack();
+                    }
+                } else {
+                    int32_t value;
+                    if (PacketParser::parseSetParam(payload, length, paramId, value)) {
+                        *(int32_t*)params[paramId].ptr = value;
+
+                        // This is bad but I really don't want to find a better way right now
+                        if (paramId == 0) {
+                            tendon1Motor.setSpeed(value);
+                            tendon2Motor.setSpeed(value);
+                            tendon3Motor.setSpeed(value);
+                        }
+                    } else {
+                        protocol.sendNack();
+                    }
+                }
+            } else {
+                protocol.sendNack();
             }
-            break;
         }
 
         case CMD_SET_TENDONS: {
@@ -126,6 +169,7 @@ void onPacketReceived(PacketType type, const uint8_t* payload, uint8_t length) {
 }
 
 void setup() {
+    initParams();
     Serial.begin(115200);
     protocol.begin(&Serial, onPacketReceived);
 }

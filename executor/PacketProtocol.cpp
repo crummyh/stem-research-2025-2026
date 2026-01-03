@@ -183,6 +183,13 @@ void PacketProtocol::clearBuffer() {
 }
 
 // PacketParser implementation
+bool PacketParser::parseSetParamId(const uint8_t *payload, uint8_t length, uint8_t &paramId) {
+    if (length < 5) return false;
+    paramId = payload[0];
+    return true;
+}
+
+
 bool PacketParser::parseSetParam(const uint8_t* payload, uint8_t length,
                                 uint8_t& paramId, int32_t& value) {
     if (length < 5) return false;
