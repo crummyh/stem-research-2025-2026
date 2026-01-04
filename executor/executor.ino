@@ -51,7 +51,7 @@ PacketProtocol protocol;
 uint8_t mode;
 
 float radsToRevs(float rads) {
-    return rads * 2 * PI;
+    return rads / (2.0 * PI);
 }
 
 // Packet handler callback
