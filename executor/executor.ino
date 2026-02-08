@@ -5,16 +5,16 @@
 #define MAX_PARAMS 2
 
 // Enable pin is not used right now
-#define tendon1MotorPul 5
-#define tendon1MotorDir 4
+#define tendon2MotorPul 5
+#define tendon2MotorDir 4
 // #define tendon1MotorEna 4
 
-#define tendon2MotorPul 3
-#define tendon2MotorDir 2
+#define tendon3MotorPul 3
+#define tendon3MotorDir 2
 // #define tendon2MotorEna 1
 
-#define tendon3MotorPul 12
-#define tendon3MotorDir 11
+#define tendon1MotorPul 12
+#define tendon1MotorDir 11
 // #define tendon3MotorEna 10
 
 #define spoolMotorPul 10
