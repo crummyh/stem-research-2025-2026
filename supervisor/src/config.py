@@ -9,8 +9,8 @@ TENDON_1_ANGLE = 0.5 * pi
 TENDON_2_ANGLE = -5 * pi / 6
 TENDON_3_ANGLE = -1 * pi / 6
 
-MIN_SPOOL_SPEED = -1.5  # rpm
-MAX_SPOOL_SPEED = 1.5  # rpm
+MIN_SPOOL_SPEED = -2.5  # rpm
+MAX_SPOOL_SPEED = 2.5  # rpm
 
 MAX_TENDON_SPEED = 60
 
